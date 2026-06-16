@@ -139,4 +139,15 @@ for n in notes:
         f.write(f"---\nname: {name}\ndescription: {desc}\ntype: {typ}\nsource: auto\n---\n\n{body}\n")
 PY
 rm -f "$RESP_FILE"
+
+# Diagnostics (local only): a background process that fails silently is a trap.
+# One line per enabled run so "why did nothing get captured?" is answerable
+# (e.g. an auth error shows up in the head snippet). Disable with MNEME_DISTILL_QUIET=1.
+if [ "${MNEME_DISTILL_QUIET:-0}" != "1" ]; then
+  LOG="$(dirname "$GLOBAL_CACHE")/_distill.log"
+  NOW="$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo now)"
+  PEND="$(find "$PENDING_DIR" -maxdepth 1 -name '*.md' ! -name '_*' 2>/dev/null | wc -l | tr -d ' ')"
+  HEAD="$(printf '%s' "$RESPONSE" | tr '\n\t' '  ' | cut -c1-160)"
+  printf '%s  resp_len=%s  pending_now=%s  head=%s\n' "$NOW" "${#RESPONSE}" "$PEND" "$HEAD" >> "$LOG" 2>/dev/null || true
+fi
 exit 0
