@@ -11,7 +11,7 @@ A self-improving engine for Claude Code. Install it once and every chat starts k
 ## Install
 
 ```
-/plugin marketplace add <this-repo-url-or-local-path>
+/plugin marketplace add Aexagon/mneme
 /plugin install mneme@mneme
 ```
 
