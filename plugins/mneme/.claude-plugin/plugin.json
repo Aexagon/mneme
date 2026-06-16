@@ -1,0 +1,10 @@
+{
+  "name": "mneme",
+  "description": "A self-improving engine for Claude Code: loads a persistent cache into every chat, learns across sessions, and holds a bay of skills.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Jerry",
+    "email": "collab@aexagon.com"
+  },
+  "keywords": ["memory", "cache", "self-improving", "learning-loop", "skills"]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "mneme",
+  "owner": {
+    "name": "Jerry",
+    "email": "collab@aexagon.com"
+  },
+  "metadata": {
+    "description": "Mneme — a self-improving cache + skill engine for Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "mneme",
+      "source": "./plugins/mneme",
+      "description": "Loads a persistent cache into every chat and learns across sessions. Commands: /mneme:remember, /mneme:recall, /mneme:status."
+    }
+  ]
+}
