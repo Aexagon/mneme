@@ -23,6 +23,17 @@ Restart the session. You should see the Mneme cache load at the top of the chat.
 - `/mneme:recall "<query>"` — search the cache.
 - `/mneme:status [prune]` — status, health, and pruning.
 - `/mneme:review` — review notes the auto-distiller proposed (off by default; see below).
+- `/mneme:loop "<goal>" --done "<criterion>"` — drive a goal to completion, verifying each pass.
+
+## The loop engine
+
+Memory is the outer loop (every new chat starts smarter). `/mneme:loop` is the inner loop: it drives one goal to completion in the current chat.
+
+```
+/mneme:loop "make the test suite green" --done "npm test exits 0" --max 8
+```
+
+It primes from the cache, then runs plan -> act -> verify -> repeat against the success criterion YOU state, capturing learnings each pass. It stops honestly: success (verified against your criterion), stuck (no progress, it asks rather than spins), or incomplete (hit the cap, reports what is left). Because each pass reads and writes the cache, the same goal run twice gets faster, and future tasks inherit what it learned.
 
 ## How it works
 

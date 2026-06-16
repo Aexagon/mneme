@@ -84,9 +84,14 @@ A background distiller can catch learnings on chats where nobody saved anything.
 - **Recursion guard:** the headless call sets `MNEME_DISTILL=1`; the distiller exits immediately if it sees that var, so the child session can never re-trigger it.
 - **Enable:** `echo 'distill=on' >> ~/.claude/mneme/config` (or set `MNEME_DISTILL_ENABLED=1`). Disable by removing that line.
 
+## The loop engine
+
+`/mneme:loop` drives a single goal to completion: it primes from the cache, then runs plan -> act -> verify -> repeat against a success criterion YOU state, capturing learnings each pass. It is the active counterpart to the cache. The cache is memory across chats (the outer loop); the loop engine is iterate-to-done within a task (the inner loop). Because each pass reads and writes the cache, the same goal run twice gets faster and future tasks inherit what it learned. It always stops honestly: success (verified), stuck (no progress, it asks for help), or incomplete (hit the iteration cap).
+
 ## Commands
 
 - `/mneme:remember "<learning>" [--project]` — save a learning (applies the gate + dedupe).
 - `/mneme:recall "<query>"` — search the cache.
 - `/mneme:status [prune] [--project]` — status, health, auto-capture state, and pruning.
 - `/mneme:review` — review pending auto-distilled notes; promote or discard each.
+- `/mneme:loop "<goal>" --done "<criterion>" [--max N]` — drive a goal to completion, verifying each pass.
