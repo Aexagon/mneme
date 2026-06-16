@@ -22,12 +22,21 @@ Restart the session. You should see the Mneme cache load at the top of the chat.
 - `/mneme:remember "<learning>" [--project]` — save a durable, reusable learning.
 - `/mneme:recall "<query>"` — search the cache.
 - `/mneme:status [prune]` — status, health, and pruning.
+- `/mneme:review` — review notes the auto-distiller proposed (off by default; see below).
 
 ## How it works
 
 - **Code** lives in the plugin. **Data** (the cache) lives outside it, at `~/.claude/mneme/cache/` (global) and `<project>/.mneme/cache/` (project overlay), so updating the plugin never wipes your memory.
 - The cache is small atomic notes plus a lean `INDEX.md`. The index is injected into every chat, so it is kept short by design; note bodies are read on demand.
-- Capture is **manual** (`/mneme:remember`) and **inline** (the agent saves durable learnings as it works). An automatic background distiller is planned but ships off by default.
+- Capture is **manual** (`/mneme:remember`) and **inline** (the agent saves durable learnings as it works), plus an optional **automatic distiller** (below).
+
+## Automatic capture (off by default)
+
+A background distiller catches learnings on sessions where nobody saved anything. It ships off; enable with `echo 'distill=on' >> ~/.claude/mneme/config`.
+
+- Fires on **SessionEnd**, reads the transcript, and asks **Sonnet** (`claude-sonnet-4-6`) to extract only durable, reusable notes (same relevance gate, deduped against the index).
+- It **proposes, it does not commit:** notes land in a pending tray (`~/.claude/mneme/cache/_pending/`) and are never injected into chats. Run `/mneme:review` to promote or discard each.
+- A recursion guard stops the headless model call from re-triggering the distiller.
 
 ## The two rules that keep it healthy
 

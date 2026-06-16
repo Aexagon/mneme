@@ -74,8 +74,19 @@ Any skill in the bay can join the loop:
 - **Read:** glob `~/.claude/mneme/cache/*.md` (and the project overlay) and read the notes relevant to its job. The index lines are already in context.
 - **Write:** follow the schema above, or just call `/mneme:remember "<learning>"`, which applies the gate, dedupes, writes the note, and updates the index for you.
 
+## Automatic capture — the distiller (off by default)
+
+A background distiller can catch learnings on chats where nobody saved anything. It is **off until you enable it**, and it never writes straight into the trusted cache.
+
+- **Trigger:** `SessionEnd`. When a session closes, the distiller reads the transcript.
+- **Model:** Sonnet (`claude-sonnet-4-6`), run headless. It applies the same relevance gate and is shown the current index so it dedupes instead of piling on.
+- **Propose, don't commit:** distilled notes land in a **pending tray** at `~/.claude/mneme/cache/_pending/` with `source: auto` in their frontmatter. The loader does NOT inject pending notes, so unconfirmed material never pollutes a chat. Review with `/mneme:review` to promote or discard each.
+- **Recursion guard:** the headless call sets `MNEME_DISTILL=1`; the distiller exits immediately if it sees that var, so the child session can never re-trigger it.
+- **Enable:** `echo 'distill=on' >> ~/.claude/mneme/config` (or set `MNEME_DISTILL_ENABLED=1`). Disable by removing that line.
+
 ## Commands
 
 - `/mneme:remember "<learning>" [--project]` — save a learning (applies the gate + dedupe).
 - `/mneme:recall "<query>"` — search the cache.
-- `/mneme:status [prune] [--project]` — status, health, and pruning.
+- `/mneme:status [prune] [--project]` — status, health, auto-capture state, and pruning.
+- `/mneme:review` — review pending auto-distilled notes; promote or discard each.
