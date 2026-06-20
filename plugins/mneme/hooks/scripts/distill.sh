@@ -1,38 +1,56 @@
 #!/usr/bin/env bash
-# Mneme — background distiller (Phase 6a).
+# Mneme — background distiller.
 # Fires on SessionEnd. Reads the conversation transcript, asks Sonnet to extract
-# durable, reusable notes (the relevance gate), and writes them to a PENDING tray
-# for you to review with /mneme:review.
+# durable, reusable notes (the relevance gate), and writes them as markdown into the
+# INBOX (`~/.claude/mneme/inbox/`) for you to pull on your own schedule with
+# /mneme:review. Inbox notes are NEVER injected into a chat until you promote them.
 #
-# Ships OFF: runs only when explicitly enabled. Guarded against recursion so the
-# headless model call it spawns can never re-trigger the distiller.
+# Ships ON by default. Disable with `distill=off` in ~/.claude/mneme/config (or
+# MNEME_DISTILL_ENABLED=0). Guarded against recursion so the headless model call it
+# spawns can never re-trigger the distiller.
 set -uo pipefail
 
 # 1) Recursion guard — never run inside a distiller-spawned session.
 [ -n "${MNEME_DISTILL:-}" ] && exit 0
 
 GLOBAL_CACHE="${MNEME_GLOBAL_DIR:-$HOME/.claude/mneme/cache}"
-PENDING_DIR="$GLOBAL_CACHE/_pending"
+MNEME_DIR="$(dirname "$GLOBAL_CACHE")"
+INBOX_DIR="$MNEME_DIR/inbox"
+LEGACY_PENDING="$GLOBAL_CACHE/_pending"
 CONFIG="${MNEME_CONFIG:-$HOME/.claude/mneme/config}"
 MODEL="${MNEME_DISTILL_MODEL:-claude-sonnet-4-6}"
+MIN_CHARS="${MNEME_DISTILL_MIN_CHARS:-1500}"
 
-# 2) Enabled check — OFF unless env var is set or the config says distill=on.
-enabled=0
-[ "${MNEME_DISTILL_ENABLED:-0}" = "1" ] && enabled=1
-[ -f "$CONFIG" ] && grep -qiE '^[[:space:]]*distill[[:space:]]*=[[:space:]]*(on|1|true|yes)[[:space:]]*$' "$CONFIG" && enabled=1
+# 2) One-time migration: fold the legacy pending tray (cache/_pending) into the inbox.
+if [ -d "$LEGACY_PENDING" ]; then
+  mkdir -p "$INBOX_DIR"
+  find "$LEGACY_PENDING" -maxdepth 1 -type f -name '*.md' -exec mv -n {} "$INBOX_DIR/" \; 2>/dev/null || true
+  rmdir "$LEGACY_PENDING" 2>/dev/null || true
+fi
+
+# 3) Enabled check — ON by default. Off only if the config says distill=off, or
+#    MNEME_DISTILL_ENABLED is explicitly falsey. Env overrides config.
+enabled=1
+[ -f "$CONFIG" ] && grep -qiE '^[[:space:]]*distill[[:space:]]*=[[:space:]]*(off|0|false|no)[[:space:]]*$' "$CONFIG" && enabled=0
+case "${MNEME_DISTILL_ENABLED:-}" in
+  1|on|true|yes) enabled=1 ;;
+  0|off|false|no) enabled=0 ;;
+esac
 [ "$enabled" = "1" ] || exit 0
 
-# 3) Read the hook JSON from stdin and pull the transcript path.
+# 4) Read the hook JSON from stdin and pull the transcript path.
 HOOK_JSON="$(cat 2>/dev/null || true)"
 TRANSCRIPT="$(printf '%s' "$HOOK_JSON" | python3 -c 'import json,sys
 try: print(json.load(sys.stdin).get("transcript_path",""))
 except Exception: print("")' 2>/dev/null || true)"
 [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ] || exit 0
 
-# 4) Build the distiller prompt: a cleaned transcript excerpt + the current index (for dedup).
-PROMPT="$(python3 - "$TRANSCRIPT" "$GLOBAL_CACHE/INDEX.md" <<'PY'
+# 5) Build the distiller prompt: a cleaned transcript excerpt + the current index
+#    (for dedup). The min-session gate (arg 3) skips trivially short sessions, so a
+#    default-on distiller never spawns a model call on a two-message chat.
+PROMPT="$(python3 - "$TRANSCRIPT" "$GLOBAL_CACHE/INDEX.md" "$MIN_CHARS" <<'PY'
 import json, sys
-transcript, index_path = sys.argv[1], sys.argv[2]
+transcript, index_path, min_chars = sys.argv[1], sys.argv[2], int(sys.argv[3] or 0)
 MAX_CHARS = 40000  # bound cost: keep the most recent slice of long sessions
 
 def read_text(p):
@@ -69,7 +87,8 @@ for line in read_text(transcript).splitlines():
 convo = "\n\n".join(msgs)
 if len(convo) > MAX_CHARS:
     convo = convo[-MAX_CHARS:]
-if not convo.strip():
+# Min-session gate: too little real conversation to be worth a model call.
+if len(convo.strip()) < min_chars:
     sys.exit(0)
 
 index = read_text(index_path).strip()
@@ -92,7 +111,7 @@ PY
 )"
 [ -n "$PROMPT" ] || exit 0
 
-# 5) Ask the model (unless a test stub is supplied). MNEME_DISTILL=1 guards the child.
+# 6) Ask the model (unless a test stub is supplied). MNEME_DISTILL=1 guards the child.
 if [ -n "${MNEME_DISTILL_STUB:-}" ] && [ -f "$MNEME_DISTILL_STUB" ]; then
   RESPONSE="$(cat "$MNEME_DISTILL_STUB")"
 else
@@ -101,14 +120,14 @@ else
 fi
 [ -n "$RESPONSE" ] || exit 0
 
-# 6) Parse the JSON array and write each proposed note into the PENDING tray.
+# 7) Parse the JSON array and write each proposed note into the INBOX as markdown.
 # Response goes via a temp file (NOT stdin): the heredoc below already occupies
 # python's stdin, so piping the response in would be silently discarded.
 RESP_FILE="$(mktemp)"
 printf '%s' "$RESPONSE" > "$RESP_FILE"
-python3 - "$PENDING_DIR" "$RESP_FILE" <<'PY'
+python3 - "$INBOX_DIR" "$RESP_FILE" <<'PY'
 import json, sys, os, re
-pending_dir, resp_file = sys.argv[1], sys.argv[2]
+inbox_dir, resp_file = sys.argv[1], sys.argv[2]
 with open(resp_file, encoding="utf-8") as f:
     raw = f.read().strip()
 raw = re.sub(r'^```(?:json)?|```$', '', raw, flags=re.MULTILINE).strip()
@@ -125,7 +144,7 @@ if not isinstance(notes, list) or not notes:
 def slug(s):
     return re.sub(r'[^a-z0-9]+', '-', (s or '').lower()).strip('-') or 'note'
 
-os.makedirs(pending_dir, exist_ok=True)
+os.makedirs(inbox_dir, exist_ok=True)
 for n in notes:
     if not isinstance(n, dict):
         continue
@@ -135,7 +154,7 @@ for n in notes:
     name = slug(n.get("name") or n.get("description"))
     desc = (n.get("description") or "").strip().replace("\n", " ")
     typ = (n.get("type") or "fact").strip()
-    with open(os.path.join(pending_dir, f"{typ}-{name}.md"), "w", encoding="utf-8") as f:
+    with open(os.path.join(inbox_dir, f"{typ}-{name}.md"), "w", encoding="utf-8") as f:
         f.write(f"---\nname: {name}\ndescription: {desc}\ntype: {typ}\nsource: auto\n---\n\n{body}\n")
 PY
 rm -f "$RESP_FILE"
@@ -144,10 +163,10 @@ rm -f "$RESP_FILE"
 # One line per enabled run so "why did nothing get captured?" is answerable
 # (e.g. an auth error shows up in the head snippet). Disable with MNEME_DISTILL_QUIET=1.
 if [ "${MNEME_DISTILL_QUIET:-0}" != "1" ]; then
-  LOG="$(dirname "$GLOBAL_CACHE")/_distill.log"
+  LOG="$MNEME_DIR/_distill.log"
   NOW="$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo now)"
-  PEND="$(find "$PENDING_DIR" -maxdepth 1 -name '*.md' ! -name '_*' 2>/dev/null | wc -l | tr -d ' ')"
+  INBOX_N="$(find "$INBOX_DIR" -maxdepth 1 -name '*.md' ! -name '_*' 2>/dev/null | wc -l | tr -d ' ')"
   HEAD="$(printf '%s' "$RESPONSE" | tr '\n\t' '  ' | cut -c1-160)"
-  printf '%s  resp_len=%s  pending_now=%s  head=%s\n' "$NOW" "${#RESPONSE}" "$PEND" "$HEAD" >> "$LOG" 2>/dev/null || true
+  printf '%s  resp_len=%s  inbox_now=%s  head=%s\n' "$NOW" "${#RESPONSE}" "$INBOX_N" "$HEAD" >> "$LOG" 2>/dev/null || true
 fi
 exit 0

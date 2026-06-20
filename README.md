@@ -22,7 +22,7 @@ Restart the session. You should see the Mneme cache load at the top of the chat.
 - `/mneme:remember "<learning>" [--project]` — save a durable, reusable learning.
 - `/mneme:recall "<query>"` — search the cache.
 - `/mneme:status [prune]` — status, health, and pruning.
-- `/mneme:review` — review notes the auto-distiller proposed (off by default; see below).
+- `/mneme:review` — pull the inbox: review notes the auto-distiller proposed (on by default; see below).
 - `/mneme:loop "<goal>" --done "<criterion>"` — drive a goal to completion, verifying each pass.
 
 ## The loop engine
@@ -41,12 +41,12 @@ It primes from the cache, then runs plan -> act -> verify -> repeat against the 
 - The cache is small atomic notes plus a lean `INDEX.md`. The index is injected into every chat, so it is kept short by design; note bodies are read on demand.
 - Capture is **manual** (`/mneme:remember`) and **inline** (the agent saves durable learnings as it works), plus an optional **automatic distiller** (below).
 
-## Automatic capture (off by default)
+## Automatic capture (on by default)
 
-A background distiller catches learnings on sessions where nobody saved anything. It ships off; enable with `echo 'distill=on' >> ~/.claude/mneme/config`.
+A background distiller catches learnings on sessions where nobody saved anything. It ships **on**; disable with `echo 'distill=off' >> ~/.claude/mneme/config`.
 
-- Fires on **SessionEnd**, reads the transcript, and asks **Sonnet** (`claude-sonnet-4-6`) to extract only durable, reusable notes (same relevance gate, deduped against the index).
-- It **proposes, it does not commit:** notes land in a pending tray (`~/.claude/mneme/cache/_pending/`) and are never injected into chats. Run `/mneme:review` to promote or discard each.
+- Fires on **SessionEnd**, reads the transcript, and asks **Sonnet** (`claude-sonnet-4-6`) to extract only durable, reusable notes (same relevance gate, deduped against the index). Trivially short sessions are skipped (no model call).
+- It **captures to an inbox, you pull on demand:** notes land as markdown in `~/.claude/mneme/inbox/` and are never injected into chats. Pull anytime with `/mneme:review`, or just open the folder — promote what you want into the live cache, discard the rest.
 - A recursion guard stops the headless model call from re-triggering the distiller.
 
 ## The two rules that keep it healthy
@@ -63,8 +63,8 @@ mneme/                                  (git repo = marketplace)
   .claude-plugin/marketplace.json
   plugins/mneme/
     .claude-plugin/plugin.json
-    hooks/         hooks.json + scripts/load-cache.sh + protocol-snippet.md
-    commands/      remember.md, recall.md, status.md
+    hooks/         hooks.json + scripts/ (load-cache.sh, distill.sh) + protocol-snippet.md
+    commands/      remember.md, recall.md, status.md, review.md, loop.md
     skills/        mneme-engine/, new-skill/
     README.md
 ```

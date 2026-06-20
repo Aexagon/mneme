@@ -74,15 +74,16 @@ Any skill in the bay can join the loop:
 - **Read:** glob `~/.claude/mneme/cache/*.md` (and the project overlay) and read the notes relevant to its job. The index lines are already in context.
 - **Write:** follow the schema above, or just call `/mneme:remember "<learning>"`, which applies the gate, dedupes, writes the note, and updates the index for you.
 
-## Automatic capture — the distiller (off by default)
+## Automatic capture — the distiller (ON by default)
 
-A background distiller can catch learnings on chats where nobody saved anything. It is **off until you enable it**, and it never writes straight into the trusted cache.
+A background distiller catches learnings on chats where nobody saved anything. It is **on by default**, and it never writes straight into the trusted cache — captured notes wait in an inbox until you pull them.
 
 - **Trigger:** `SessionEnd`. When a session closes, the distiller reads the transcript.
 - **Model:** Sonnet (`claude-sonnet-4-6`), run headless. It applies the same relevance gate and is shown the current index so it dedupes instead of piling on.
-- **Propose, don't commit:** distilled notes land in a **pending tray** at `~/.claude/mneme/cache/_pending/` with `source: auto` in their frontmatter. The loader does NOT inject pending notes, so unconfirmed material never pollutes a chat. Review with `/mneme:review` to promote or discard each.
+- **Capture to the inbox, pull on demand:** distilled notes land as markdown in `~/.claude/mneme/inbox/` (a sibling of `cache/`) with `source: auto` in their frontmatter. The loader does NOT read the inbox, so auto-captured material never enters a chat until you promote it. Pull anytime with `/mneme:review` (keep/discard, dedupe + promote), or just open the folder and read the markdown yourself.
+- **Min-session gate:** trivially short sessions (under ~1500 chars of real conversation; override `MNEME_DISTILL_MIN_CHARS`) are skipped — no model call.
 - **Recursion guard:** the headless call sets `MNEME_DISTILL=1`; the distiller exits immediately if it sees that var, so the child session can never re-trigger it.
-- **Enable:** `echo 'distill=on' >> ~/.claude/mneme/config` (or set `MNEME_DISTILL_ENABLED=1`). Disable by removing that line.
+- **Disable:** `echo 'distill=off' >> ~/.claude/mneme/config` (or `MNEME_DISTILL_ENABLED=0`). Re-enable by removing that line.
 
 ## The loop engine
 
