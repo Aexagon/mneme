@@ -11,7 +11,7 @@
     {
       "name": "mneme",
       "source": "./plugins/mneme",
-      "description": "Loads a persistent cache into every chat and learns across sessions. Commands: /mneme:remember, /mneme:recall, /mneme:status."
+      "description": "Loads a persistent cache into every chat and learns across sessions. Commands: /mneme:remember, /mneme:recall, /mneme:status, /mneme:review, /mneme:loop; plus an auto-discovered skill bay."
     }
   ]
 }

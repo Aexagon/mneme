@@ -15,7 +15,17 @@ if command -v python3 >/dev/null 2>&1; then
 import json, os, sys
 
 global_cache, project_cache, protocol_file = sys.argv[1], sys.argv[2], sys.argv[3]
-MAX_CHARS = 16000  # lean-index guard: never flood the context window
+
+# Lean-index guard: never flood the context window. Default 16000, overridable per
+# machine or per invocation via MNEME_MAX_CHARS. Read from the environment (this
+# heredoc is single-quoted, so shell vars do NOT interpolate here); any invalid or
+# non-positive value falls back to the default.
+try:
+    MAX_CHARS = int(os.environ.get("MNEME_MAX_CHARS", "16000"))
+    if MAX_CHARS <= 0:
+        raise ValueError
+except ValueError:
+    MAX_CHARS = 16000
 
 def read(path):
     try:
