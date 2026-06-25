@@ -9,9 +9,11 @@ GLOBAL_CACHE="${MNEME_GLOBAL_DIR:-$HOME/.claude/mneme/cache}"
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 PROJECT_CACHE="$PROJECT_ROOT/.mneme/cache"
 PROTOCOL_FILE="$SCRIPT_DIR/../../assets/protocol-snippet.md"
+WIKI_HOME="${MNEME_WIKI_DIR:-$(dirname "$GLOBAL_CACHE")/wiki}"
+PROJECT_WIKI="$PROJECT_ROOT/.mneme/wiki"
 
 if command -v python3 >/dev/null 2>&1; then
-  python3 - "$GLOBAL_CACHE" "$PROJECT_CACHE" "$PROTOCOL_FILE" <<'PY' || exit 0
+  python3 - "$GLOBAL_CACHE" "$PROJECT_CACHE" "$PROTOCOL_FILE" "$WIKI_HOME" "$PROJECT_WIKI" <<'PY' || exit 0
 import json, os, sys
 
 global_cache, project_cache, protocol_file = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -58,6 +60,21 @@ else:
 pi = strip_h1(read(os.path.join(project_cache, "INDEX.md")))
 if pi:
     parts.append("# Mneme cache (this project)\n\n" + pi)
+
+# Tier 2 notice only: name the corpora, never read their bodies/indexes.
+def wiki_names(home):
+    out = []
+    try:
+        for n in sorted(os.listdir(home)):
+            if os.path.isfile(os.path.join(home, n, "index.md")):
+                out.append(n)
+    except OSError:
+        pass
+    return out
+wiki_home, project_wiki = sys.argv[4], sys.argv[5]
+corpora = wiki_names(wiki_home) + wiki_names(project_wiki)
+if corpora:
+    parts.append("# Mneme wikis\n\nWikis: " + ", ".join(corpora) + " — query with /recall --wiki <name>")
 
 context = "\n\n---\n\n".join(parts)
 if len(context) > MAX_CHARS:

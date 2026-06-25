@@ -24,3 +24,16 @@ test_loader_honors_max_chars() {
   rm -rf "$tmp"
   assert_contains "$out" "Mneme index truncated" "loader truncates past MNEME_MAX_CHARS" || return 1
 }
+
+test_loader_announces_wiki_but_never_its_body() {
+  local root tmp out
+  root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  tmp="$(mktemp -d)"; mkdir -p "$tmp/cache" "$tmp/wiki/handbook"
+  printf '# Mneme cache\n\n- [Demo](fact-demo.md) — x\n' > "$tmp/cache/INDEX.md"
+  printf '# Handbook\n\nWIKI_BODY_MUST_NOT_LOAD\n' > "$tmp/wiki/handbook/index.md"
+  out="$(MNEME_GLOBAL_DIR="$tmp/cache" bash "$root/plugins/mneme/hooks/scripts/load-cache.sh" \
+        | python3 -c 'import json,sys;print(json.load(sys.stdin)["hookSpecificOutput"]["additionalContext"])')"
+  rm -rf "$tmp"
+  assert_contains "$out" "Wikis: handbook" "loader announces the corpus name" || return 1
+  assert_not_contains "$out" "WIKI_BODY_MUST_NOT_LOAD" "loader never injects wiki bodies" || return 1
+}
