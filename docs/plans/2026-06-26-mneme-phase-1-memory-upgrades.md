@@ -608,3 +608,11 @@ git commit -m "docs(engine): document the log, cross-ref, file-back, and /mneme:
 **3. Type/name consistency:** `mneme_log_append`, `mneme_log_tail`, `mneme_md_index_drift`, `mneme_links_add`, `mneme_links_dead`, `mneme_links_orphans` are used identically in tests, lib, and the command prompts. Log ops are spelled consistently (`remember`, `promote`, `prune`, `recall-filed`, `lint-fix`) across remember/review/status/recall/lint and the engine doc, matching the spec §5 set. The wiring tests assert on these exact strings, so a rename in a prompt without a matching test update fails loudly.
 
 **Note on Step 5 of Task 7:** `pass=15` = 9 lib/loader tests (2 loader + 2 log + 3 md + 2 links — Tasks 1–2 add one each to log and md) + 6 command/skill wiring functions (remember, recall, status, review, lint, engine, across 5 files — `cmd_maintenance_test.sh` holds two). The gate that matters is `fail=0`.
+
+---
+
+## Phase 1.1 — zsh hardening (post-execution addendum)
+
+**Why:** the smoke run surfaced that this machine's default shell (what the agent's Bash tool runs for bare commands) is **zsh 5.9**, not bash, and that interactive zsh has xtrace on with a custom `PS4='+%N:%i> '`. Sourcing the bash-targeted `lib/*.sh` helpers into zsh and calling them leaks assignment traces (`nm=''` …) onto stdout — corrupting the output `/mneme:lint` and `/status` parse. The lib itself is correct (proven: 15 tests via `bash tests/run.sh`, plus `env -i bash --noprofile --norc` and explicit `bash -c` both produce clean output). Root cause was a *test-method* artifact (sourcing bash funcs into zsh), but it implies a real runtime requirement.
+
+**Fix:** every prompt that runs a helper block now invokes it via a single explicit `bash <<'SH' … SH` heredoc (terminator flush-left), so helpers run under a fresh bash with clean defaults regardless of the login shell — and source+call live in one invocation (Bash-tool shell state does not persist between calls). Hardened: `remember.md`, `status.md`, `review.md`, `lint.md`. Guard: `tests/cmd_bash_invocation_test.sh` asserts each of the four contains `bash <<'`. Suite is now `pass=16`. See memory note `reference-shell-zsh-bash-helpers`.
