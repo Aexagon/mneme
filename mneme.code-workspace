@@ -1,0 +1,17 @@
+{
+  "folders": [
+    { "name": "plugin", "path": "plugins/mneme" },
+    { "name": "docs", "path": "docs" },
+    { "name": "tests", "path": "tests" }
+  ],
+  "settings": {
+    "files.watcherExclude": {
+      "**/.git/**": true,
+      "**/.DS_Store": true,
+      "**/node_modules/**": true
+    },
+    "search.exclude": {
+      "**/.git": true
+    }
+  }
+}
