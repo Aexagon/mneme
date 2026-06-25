@@ -12,3 +12,9 @@ mneme_log_append() {
     printf '## [%s] %s | %s\n' "$today" "$op" "$slug" >> "$log"
   fi
 }
+
+# Last n (default 5) timeline entries. Empty if the log does not exist yet.
+mneme_log_tail() {
+  local dir="$1" n="${2:-5}"
+  grep '^## \[' "$dir/log.md" 2>/dev/null | tail -n "$n"
+}
