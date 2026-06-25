@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mneme — the memory Claude Code keeps between sessions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        oklch(0.985 0.004 160);
+    --surface:   oklch(1 0 0);
+    --tint:      oklch(0.969 0.008 160);
+    --ink:       oklch(0.24 0.022 165);
+    --ink-soft:  oklch(0.405 0.028 163);
+    --green:     oklch(0.36 0.072 162);
+    --green-deep:oklch(0.275 0.055 164);
+    --cream:     oklch(0.955 0.022 150);
+    --amber:     oklch(0.76 0.132 66);
+    --amber-ink: oklch(0.47 0.115 60);
+    --line:      oklch(0.9 0.012 160);
+    --line-strong:oklch(0.8 0.022 160);
+
+    --serif: "Spectral", Georgia, "Times New Roman", serif;
+    --sans: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --maxw: 74rem;
+    --pad: clamp(1.25rem, 5vw, 4rem);
+
+    --z-base:0; --z-raised:10;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:clamp(1rem, 0.96rem + 0.2vw, 1.12rem);
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+  }
+
+  .wrap{ max-width:var(--maxw); margin-inline:auto; padding-inline:var(--pad); }
+
+  a{ color:var(--green); text-decoration:none; }
+  a:hover{ color:var(--amber-ink); }
+
+  h1,h2,h3{ font-family:var(--serif); font-weight:500; color:var(--green-deep);
+    letter-spacing:-0.018em; line-height:1.08; text-wrap:balance; margin:0; }
+  p{ text-wrap:pretty; }
+
+  .mono{ font-family:var(--mono); font-size:0.82em; letter-spacing:-0.01em; }
+
+  /* ---- load motion ---- */
+  .rise{ opacity:0; transform:translateY(10px); animation:rise 0.9s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .rise.d1{ animation-delay:0.06s; }
+  .rise.d2{ animation-delay:0.14s; }
+  .rise.d3{ animation-delay:0.24s; }
+  .rise.d4{ animation-delay:0.34s; }
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){
+    .rise{ opacity:1; transform:none; animation:none; }
+  }
+
+  /* ---- header ---- */
+  header{ padding-block:clamp(1.5rem,4vw,2.5rem) clamp(3rem,9vw,7rem); }
+  .topline{ display:flex; align-items:baseline; gap:0.7rem; flex-wrap:wrap;
+    border-bottom:1px solid var(--line); padding-bottom:1.1rem; margin-bottom:clamp(2.5rem,7vw,5rem); }
+  .mark{ font-family:var(--serif); font-weight:600; font-size:1.5rem; color:var(--green-deep);
+    letter-spacing:-0.02em; }
+  .mark b{ color:var(--amber-ink); font-weight:600; }
+  .etym{ font-family:var(--serif); font-style:italic; color:var(--ink-soft); font-size:0.96rem; }
+  .ver{ margin-left:auto; font-family:var(--mono); font-size:0.74rem; color:var(--ink-soft);
+    border:1px solid var(--line); padding:0.2rem 0.55rem; border-radius:999px; }
+
+  .hero h1{ font-size:clamp(2.3rem, 1.4rem + 4vw, 4.6rem); font-weight:500; max-width:18ch; }
+  .hero .lede{ margin-top:1.4rem; font-size:clamp(1.12rem,1rem+0.6vw,1.42rem); line-height:1.5;
+    max-width:46ch; color:var(--ink); }
+  .hero .lede b{ font-weight:600; color:var(--green-deep); }
+
+  .cmds{ margin-top:2.4rem; display:flex; gap:0.5rem; flex-wrap:wrap; }
+  .chip{ font-family:var(--mono); font-size:0.76rem; color:var(--green);
+    background:var(--surface); border:1px solid var(--line); border-radius:0.5rem;
+    padding:0.4rem 0.7rem; }
+  .chip span{ color:var(--ink-soft); }
+
+  /* ---- section frame ---- */
+  section{ padding-block:clamp(3rem,8vw,6rem); }
+  .kicker{ font-family:var(--mono); font-size:0.76rem; color:var(--amber-ink);
+    letter-spacing:0.02em; margin:0 0 1rem; }
+  .h2{ font-size:clamp(1.7rem,1.2rem+2vw,2.9rem); max-width:20ch; }
+  .intro{ margin-top:1.1rem; max-width:54ch; color:var(--ink-soft); font-size:clamp(1.02rem,1rem+0.3vw,1.18rem); }
+
+  /* ---- the two-tier diagram ---- */
+  .archive{ margin-top:clamp(2rem,5vw,3.5rem); border:1px solid var(--line-strong);
+    border-radius:1rem; overflow:hidden; background:var(--surface); }
+  .stratum{ display:grid; grid-template-columns:minmax(11rem,18rem) 1fr; gap:clamp(1rem,3vw,2.5rem);
+    padding:clamp(1.4rem,3.5vw,2.4rem); align-items:start; }
+  .stratum + .stratum{ border-top:1px solid var(--line-strong); }
+
+  .stratum--live{ background:var(--green-deep); color:var(--cream); }
+  .stratum--live h3{ color:var(--cream); }
+  .stratum--live .s-desc{ color:oklch(0.88 0.03 150); }
+  .stratum--live .attr dt{ color:oklch(0.78 0.04 150); }
+  .stratum--live .attr dd{ color:var(--cream); }
+  .stratum--live .tier-no{ color:oklch(0.72 0.06 150); }
+
+  .stratum--soon{ background:repeating-linear-gradient(135deg, var(--surface) 0 10px, var(--tint) 10px 20px); }
+  .stratum--soon .s-head{ }
+
+  .s-head{ }
+  .tier-no{ font-family:var(--mono); font-size:0.78rem; color:var(--green); margin:0 0 0.5rem; }
+  .stratum h3{ font-size:clamp(1.5rem,1.1rem+1.4vw,2.1rem); font-weight:600; }
+  .badge{ display:inline-block; margin-top:0.9rem; font-family:var(--mono); font-size:0.72rem;
+    padding:0.28rem 0.6rem; border-radius:999px; }
+  .badge--live{ background:var(--amber); color:var(--green-deep); font-weight:500; }
+  .badge--soon{ background:transparent; color:var(--green); border:1px dashed var(--line-strong); }
+
+  .s-body{ }
+  .s-desc{ margin:0 0 1.5rem; font-size:1.05rem; line-height:1.55; color:var(--ink); max-width:48ch; }
+  .attr{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem 1.4rem; margin:0; }
+  .attr dt{ font-family:var(--mono); font-size:0.7rem; color:var(--ink-soft); margin-bottom:0.25rem;
+    letter-spacing:0.01em; }
+  .attr dd{ margin:0; font-weight:600; color:var(--green-deep); font-size:0.98rem; line-height:1.3; }
+
+  .base{ background:var(--tint); padding:1.1rem clamp(1.4rem,3.5vw,2.4rem);
+    display:flex; gap:0.6rem 1.1rem; flex-wrap:wrap; align-items:center;
+    border-top:1px solid var(--line-strong); }
+  .base .lbl{ font-weight:700; color:var(--green-deep); font-size:0.92rem; }
+  .base .prim{ font-family:var(--mono); font-size:0.76rem; color:var(--green);
+    background:var(--surface); border:1px solid var(--line); border-radius:0.45rem; padding:0.28rem 0.55rem; }
+  .base .you{ margin-left:auto; color:var(--ink-soft); font-size:0.9rem; font-style:italic; font-family:var(--serif); }
+
+  /* ---- use cases ---- */
+  .lane{ display:grid; grid-template-columns:minmax(0,16rem) 1fr; gap:clamp(0.8rem,3vw,3rem);
+    padding-block:clamp(1.8rem,4vw,2.8rem); }
+  .lane + .lane{ border-top:1px solid var(--line); }
+  .lane-name{ font-family:var(--serif); font-size:clamp(1.3rem,1rem+1vw,1.7rem); font-weight:500;
+    color:var(--green-deep); }
+  .lane-name .who{ display:block; font-family:var(--sans); font-size:0.8rem; font-weight:600;
+    color:var(--amber-ink); margin-top:0.5rem; letter-spacing:0.01em; }
+  .uses{ list-style:none; margin:0; padding:0; display:grid; gap:1.15rem; }
+  .uses li{ display:grid; gap:0.3rem; }
+  .said{ font-family:var(--serif); font-style:italic; font-size:1.1rem; color:var(--green-deep);
+    line-height:1.4; }
+  .said::before{ content:"\201C"; }
+  .said::after{ content:"\201D"; }
+  .then{ color:var(--ink-soft); font-size:0.98rem; line-height:1.45; max-width:60ch; }
+  .then b{ color:var(--ink); font-weight:600; }
+  .loopline .said{ font-style:normal; font-family:var(--mono); font-size:0.92rem;
+    color:var(--green); background:var(--tint); border:1px solid var(--line);
+    border-radius:0.5rem; padding:0.6rem 0.8rem; display:inline-block; }
+  .loopline .said::before,.loopline .said::after{ content:""; }
+
+  /* ---- today vs gap ---- */
+  .split{ display:grid; grid-template-columns:repeat(auto-fit,minmax(20rem,1fr)); gap:1.25rem;
+    margin-top:clamp(2rem,5vw,3rem); }
+  .panel{ border:1px solid var(--line-strong); border-radius:0.9rem; padding:clamp(1.4rem,3vw,2rem);
+    background:var(--surface); }
+  .panel--gap{ background:var(--tint); border-style:dashed; }
+  .panel h3{ font-size:1.25rem; font-weight:600; display:flex; align-items:center; gap:0.6rem; }
+  .dot{ width:0.6rem; height:0.6rem; border-radius:50%; flex:none; }
+  .dot--on{ background:var(--amber); }
+  .dot--off{ background:transparent; border:1.5px solid var(--green); }
+  .panel p{ margin:0.9rem 0 0; color:var(--ink-soft); }
+  .panel p b{ color:var(--ink); font-weight:600; }
+  .panel ul{ margin:1rem 0 0; padding-left:1.1rem; color:var(--ink); }
+  .panel li{ margin-bottom:0.45rem; }
+
+  /* ---- why mneme ---- */
+  .versus{ margin-top:clamp(2rem,5vw,3rem); display:grid; gap:0; border:1px solid var(--line-strong);
+    border-radius:0.9rem; overflow:hidden; }
+  .vrow{ display:grid; grid-template-columns:minmax(9rem,14rem) 1fr; gap:clamp(0.8rem,3vw,2.5rem);
+    padding:clamp(1.1rem,2.6vw,1.6rem) clamp(1.2rem,3vw,2rem); background:var(--surface); }
+  .vrow + .vrow{ border-top:1px solid var(--line); }
+  .vrow .what{ font-weight:700; color:var(--green-deep); }
+  .vrow .what small{ display:block; font-weight:400; color:var(--ink-soft); font-size:0.82rem;
+    margin-top:0.3rem; font-family:var(--sans); }
+  .vrow .says{ color:var(--ink); }
+  .vrow .says b{ color:var(--green-deep); }
+  .vrow--keystone{ background:var(--green-deep); }
+  .vrow--keystone .what{ color:var(--cream); }
+  .vrow--keystone .what small{ color:oklch(0.8 0.04 150); }
+  .vrow--keystone .says{ color:var(--cream); }
+  .vrow--keystone .says b{ color:var(--amber); }
+
+  /* ---- footer ---- */
+  footer{ border-top:1px solid var(--line); margin-top:clamp(3rem,8vw,6rem);
+    padding-block:clamp(2rem,5vw,3rem) clamp(3rem,7vw,5rem); }
+  .foot{ display:flex; gap:0.6rem 1.4rem; flex-wrap:wrap; align-items:center;
+    font-family:var(--mono); font-size:0.78rem; color:var(--ink-soft); }
+  .foot .nm{ color:var(--green-deep); font-weight:500; }
+  .foot .sep{ color:var(--line-strong); }
+  .foot a{ margin-left:auto; }
+
+  /* ---- responsive collapses ---- */
+  @media (max-width:720px){
+    .stratum{ grid-template-columns:1fr; }
+    .lane{ grid-template-columns:1fr; }
+    .vrow{ grid-template-columns:1fr; gap:0.4rem; }
+    .attr{ grid-template-columns:repeat(2,1fr); }
+    .base .you{ margin-left:0; width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="topline rise">
+      <span class="mark">Mn<b>e</b>me</span>
+      <span class="etym">Greek: memory</span>
+      <span class="ver">v0.2.0</span>
+    </div>
+    <div class="hero">
+      <h1 class="rise d1">The memory Claude&nbsp;Code keeps between sessions.</h1>
+      <p class="lede rise d2">Every new chat starts from zero. Mneme loads what past chats learned into each session, then writes new, durable learnings back, so the next chat <b>starts further along instead of starting over</b>.</p>
+      <div class="cmds rise d3">
+        <span class="chip">/mneme:remember <span>save a learning</span></span>
+        <span class="chip">/mneme:recall <span>search it</span></span>
+        <span class="chip">/mneme:review <span>pull the inbox</span></span>
+        <span class="chip">/mneme:loop <span>drive a goal</span></span>
+      </div>
+    </div>
+  </header>
+</div>
+
+<div class="wrap">
+  <section id="model">
+    <p class="kicker">the shape of it</p>
+    <h2 class="h2">Two tiers, one engine.</h2>
+    <p class="intro">Mneme is a <strong>memory</strong> today. The same markdown engine extends to a <strong>knowledge base</strong> over documents you curate. Knowing which is which is the whole map, because the two pull in opposite directions: one stays small so it can load everywhere, the other is free to grow because it never loads uninvited.</p>
+
+    <div class="archive">
+      <div class="stratum stratum--live">
+        <div class="s-head">
+          <p class="tier-no">tier 1</p>
+          <h3>Memory</h3>
+          <span class="badge badge--live">live now</span>
+        </div>
+        <div class="s-body">
+          <p class="s-desc">A lean, gate-kept set of notes that loads into every chat. It stays small on purpose, because anything injected into the context window has to earn its room. It learns from your conversations.</p>
+          <dl class="attr">
+            <div><dt>loaded</dt><dd>every session</dd></div>
+            <div><dt>source</dt><dd>your chats</dd></div>
+            <div><dt>size</dt><dd>lean by design</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="stratum stratum--soon">
+        <div class="s-head">
+          <p class="tier-no">tier 2</p>
+          <h3>Knowledge</h3>
+          <span class="badge badge--soon">on the roadmap</span>
+        </div>
+        <div class="s-body">
+          <p class="s-desc">A wiki Mneme maintains over a corpus you point it at: a research topic, a client, a book. Read only when you ask, so it can compound without ever taxing a chat. It learns from your documents.</p>
+          <dl class="attr">
+            <div><dt>loaded</dt><dd>on demand</dd></div>
+            <div><dt>source</dt><dd>your files</dd></div>
+            <div><dt>size</dt><dd>compounds</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="base">
+        <span class="lbl">Same engine underneath</span>
+        <span class="prim">an index</span>
+        <span class="prim">cross-linked notes</span>
+        <span class="prim">a log</span>
+        <span class="you">You read it. Mneme does the bookkeeping.</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section id="uses">
+    <p class="kicker">in practice</p>
+    <h2 class="h2">What people do with it</h2>
+    <p class="intro">Everything below works on the memory tier that ships today. The pattern is the same each time: tell Claude once, and every future session already knows.</p>
+
+    <div class="lane">
+      <div class="lane-name">Developers<span class="who">the people who can install it today</span></div>
+      <ul class="uses">
+        <li>
+          <span class="said">Use pnpm, tests are vitest in __tests__, never touch /legacy.</span>
+          <span class="then">Said once, <b>known in every future session on that repo</b>. No more re-explaining the house rules after each /clear.</span>
+        </li>
+        <li>
+          <span class="said">The flaky CI test is a timezone bug. Pin TZ=UTC in setup.</span>
+          <span class="then">Six weeks later it resurfaces and <b>the fix is already there</b>, instead of being re-derived from scratch.</span>
+        </li>
+        <li>
+          <span class="said">Terse answers, run typecheck before declaring done, deploy via make ship.</span>
+          <span class="then">A preference that <b>follows you into every repo</b>, not one project's config file.</span>
+        </li>
+        <li>
+          <span class="said">Commit the project cache into the repo.</span>
+          <span class="then">Now <b>every teammate's Claude inherits the same hard-won context</b>. Onboarding that ships with the code.</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="lane">
+      <div class="lane-name">Power users<span class="who">non-developers who live in Claude Code</span></div>
+      <ul class="uses">
+        <li>
+          <span class="said">Nicolette's voice is warm, no jargon. Banned words: synergy, leverage.</span>
+          <span class="then">Every session about that client <b>starts knowing it</b>. Brand rules and standing facts stop getting re-typed.</span>
+        </li>
+        <li>
+          <span class="said">Our packages, pricing, and who's who.</span>
+          <span class="then">Captured once and <b>carried into every chat about the business</b>.</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="lane">
+      <div class="lane-name">Anyone<span class="who">a different axis: iteration, not memory</span></div>
+      <ul class="uses loopline">
+        <li>
+          <span class="said">/mneme:loop "make the suite green" --done "npm test exits 0"</span>
+          <span class="then">Drives one goal to completion in the current chat: plan, act, verify, repeat against a criterion <b>you</b> state, learning each pass and stopping honestly when it is done or stuck.</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section id="today">
+    <p class="kicker">be honest with the people you send it to</p>
+    <h2 class="h2">What is real today, and what is not yet</h2>
+    <div class="split">
+      <div class="panel">
+        <h3><span class="dot dot--on"></span>Works now</h3>
+        <p>Anything Mneme can learn <b>from a conversation</b>. Preferences, fixes, conventions, client facts, project context. You work, it remembers, the next chat is sharper.</p>
+      </div>
+      <div class="panel panel--gap">
+        <h3><span class="dot dot--off"></span>Not yet</h3>
+        <p>Pointing it at <b>a folder of documents</b> and asking questions that synthesize across them. That is tier 2.</p>
+        <ul>
+          <li>Ingest 40 papers, then ask across them</li>
+          <li>Build a companion wiki as you read a book</li>
+          <li>Keep a living analysis current from clippings</li>
+        </ul>
+        <p>If someone installs Mneme expecting this today, they bounce. Say so plainly in the README.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section id="why">
+    <p class="kicker">the question a sharp user asks first</p>
+    <h2 class="h2">Why this, and not the memory that ships in the box</h2>
+    <p class="intro">Claude Code already has CLAUDE.md (per-project, hand-maintained) and a built-in memory. So the real deltas have to be specific, or the pitch is hollow.</p>
+
+    <div class="versus">
+      <div class="vrow">
+        <div class="what">Plain markdown<small>not a black box</small></div>
+        <div class="says">Notes are files <b>you own</b>: grep them, edit them, version them in git, move them between machines.</div>
+      </div>
+      <div class="vrow">
+        <div class="what">Discipline by design<small>so it keeps loading</small></div>
+        <div class="says">A relevance gate, dedupe, and pruning keep the index lean. <b>Built-in memory bloats; Mneme has an opinion about staying small.</b></div>
+      </div>
+      <div class="vrow">
+        <div class="what">Global and project<small>two tiers of scope</small></div>
+        <div class="says">A global cache that follows you everywhere, plus a per-repo overlay. Built-ins are essentially per-project.</div>
+      </div>
+      <div class="vrow">
+        <div class="what">Capture that quarantines<small>the distiller</small></div>
+        <div class="says">It drafts learnings into an <b>inbox you approve from</b>, never straight into your context.</div>
+      </div>
+      <div class="vrow">
+        <div class="what">An engine, not a file<small>skill bay + loop</small></div>
+        <div class="says">A bay of skills that read and write the same cache, and <b>/mneme:loop</b> to drive a task to done.</div>
+      </div>
+      <div class="vrow vrow--keystone">
+        <div class="what">The knowledge tier<small>the real reason</small></div>
+        <div class="says">The wiki over your own documents is the one thing the built-ins flatly do not do. <b>That is the use case that is only Mneme.</b></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="foot">
+      <span class="nm">Mneme v0.2.0</span>
+      <span class="sep">/</span>
+      <span>memory tier live</span>
+      <span class="sep">/</span>
+      <span>knowledge tier on the roadmap</span>
+      <a href="https://github.com/Aexagon/mneme">github.com/Aexagon/mneme</a>
+    </div>
+  </footer>
+</div>
+
+</body>
+</html>
