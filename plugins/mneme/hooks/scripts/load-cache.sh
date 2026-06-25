@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GLOBAL_CACHE="${MNEME_GLOBAL_DIR:-$HOME/.claude/mneme/cache}"
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 PROJECT_CACHE="$PROJECT_ROOT/.mneme/cache"
-PROTOCOL_FILE="$SCRIPT_DIR/protocol-snippet.md"
+PROTOCOL_FILE="$SCRIPT_DIR/../../assets/protocol-snippet.md"
 
 if command -v python3 >/dev/null 2>&1; then
   python3 - "$GLOBAL_CACHE" "$PROJECT_CACHE" "$PROTOCOL_FILE" <<'PY' || exit 0
