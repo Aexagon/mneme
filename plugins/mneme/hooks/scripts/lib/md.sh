@@ -31,3 +31,20 @@ mneme_md_index_remove() {
   grep -vF "($file)" "$index" > "$tmp" 2>/dev/null || true
   mv "$tmp" "$index"
 }
+
+# Two-way drift between INDEX.md and the note files. Uses temp files (not process
+# substitution) so an empty side yields no spurious blank-line matches.
+mneme_md_index_drift() {
+  local dir="$1" index="$1/INDEX.md" itmp atmp b
+  itmp="$(mktemp)"; atmp="$(mktemp)"
+  grep -oE '\([^)]+\.md\)' "$index" 2>/dev/null | sed -E 's/^\(//; s/\)$//' | sort -u > "$itmp"
+  for f in "$dir"/*.md; do
+    [ -f "$f" ] || continue
+    b="$(basename "$f")"
+    case "$b" in INDEX.md|log.md|_*) continue;; esac
+    printf '%s\n' "$b"
+  done | sort -u > "$atmp"
+  comm -23 "$itmp" "$atmp" | sed 's/^/missing-file: /'
+  comm -13 "$itmp" "$atmp" | sed 's/^/unindexed: /'
+  rm -f "$itmp" "$atmp"
+}
