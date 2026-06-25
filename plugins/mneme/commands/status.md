@@ -12,6 +12,13 @@ Args: $ARGUMENTS
 - Cache location(s) in use (global at `~/.claude/mneme/cache/`, and the project overlay `./.mneme/cache/` if present).
 - Note count, total size, and `INDEX.md` size in lines + KB.
 - The 5 most recently modified notes (name + description).
+- Recent activity — the last 5 entries from the timeline. Resolve the lib, then `mneme_log_tail "<cache-dir>" 5`:
+  ```bash
+  mneme_lib="${CLAUDE_PLUGIN_ROOT:-}/hooks/scripts/lib"
+  [ -f "$mneme_lib/log.sh" ] || mneme_lib="$(dirname "$(find "$HOME/.claude/plugins" -path '*/mneme/hooks/scripts/lib/log.sh' 2>/dev/null | head -1)")"
+  . "$mneme_lib/log.sh"
+  ```
+  If there is no `log.md` yet, say so. The log is an append-only timeline of saves / prunes / promotes; it is never injected into a chat.
 - Health flag: if `INDEX.md` exceeds ~300 lines or ~16 KB, warn that it is approaching the size where Claude Code stops loading it, and recommend pruning (the lean-index rule).
 - Auto-capture state: report ON or OFF. It is **ON by default**; it is OFF only if `~/.claude/mneme/config` contains `distill=off` (or `MNEME_DISTILL_ENABLED=0`). If ON, give the one-liner to disable it: `echo 'distill=off' >> ~/.claude/mneme/config`. If OFF, the one-liner to re-enable: remove that line.
 - Inbox: count auto-distilled notes waiting in `~/.claude/mneme/inbox/*.md` (also the legacy `~/.claude/mneme/cache/_pending/*.md` if it still exists; ignore `_`-prefixed files). If any, prompt the user to run `/mneme:review` to pull them.
@@ -20,6 +27,7 @@ Args: $ARGUMENTS
 **PRUNE** (only if requested) — propose, then act on confirmation:
 - Identify candidates: near-duplicates, notes that are no longer true (failed the durability test), and very low-value notes that never get used.
 - Show the candidate list with a one-line reason each. Ask the user to confirm before deleting anything.
-- On confirmation, delete the confirmed notes and update `INDEX.md` to match.
+- On confirmation, delete the confirmed notes, update `INDEX.md` to match, and `mneme_log_append "<cache-dir>" prune "<slug>"` for each removed note.
+- For deeper audits — dead `[[links]]`, orphan notes, INDEX-vs-files drift, contradictions — point the user to `/mneme:lint`. `/status prune` stays the light pass.
 
 Never delete without explicit confirmation.

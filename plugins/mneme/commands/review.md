@@ -12,7 +12,7 @@ You are running `/mneme:review`. The background distiller *proposes* notes into 
 3. For each KEPT note:
    - Apply the relevance gate once more (durable AND reusable in a different future chat). If it fails, recommend discarding instead.
    - DEDUPE against the main cache (`~/.claude/mneme/cache/*.md`): if an existing note already covers it, merge/update that note rather than adding a duplicate.
-   - Otherwise move the file from `inbox/` into the main cache (you may keep the `source: auto` line as provenance), and add one line to `INDEX.md`: `- [<Title>](<file>.md) — <description>`.
+   - Otherwise move the file from `inbox/` into the main cache (you may keep the `source: auto` line as provenance), add one line to `INDEX.md`: `- [<Title>](<file>.md) — <description>`, and log the promotion. Resolve the lib once (`mneme_lib="${CLAUDE_PLUGIN_ROOT:-}/hooks/scripts/lib"; [ -f "$mneme_lib/log.sh" ] || mneme_lib="$(dirname "$(find "$HOME/.claude/plugins" -path '*/mneme/hooks/scripts/lib/log.sh' 2>/dev/null | head -1)")"; . "$mneme_lib/log.sh"`), then `mneme_log_append "$HOME/.claude/mneme/cache" promote "<slug>"`.
 
 4. For each DISCARDED note: delete it from `inbox/`.
 
