@@ -95,6 +95,10 @@ A background distiller catches learnings on chats where nobody saved anything. I
 - **Recursion guard:** the headless call sets `MNEME_DISTILL=1`; the distiller exits immediately if it sees that var, so the child session can never re-trigger it.
 - **Disable:** `echo 'distill=off' >> ~/.claude/mneme/config` (or `MNEME_DISTILL_ENABLED=0`). Re-enable by removing that line.
 
+## Two tiers: cache and wiki
+
+Mneme has two tiers on one engine. **Tier 1 — the cache** (everything above): lean, gate-kept, injected into every chat. **Tier 2 — a wiki**: a per-corpus knowledge base built from documents, read on demand and **never injected** (the loader only names the corpora). A wiki can be large; the cache must stay lean. Build one with `/mneme:ingest <source> --wiki <name>`, query it with `/mneme:recall "<q>" --wiki <name>`, audit it with `/mneme:lint --wiki <name>`. Governed by the `mneme-wiki` skill.
+
 ## The loop engine
 
 `/mneme:loop` drives a single goal to completion: it primes from the cache, then runs plan -> act -> verify -> repeat against a success criterion YOU state, capturing learnings each pass. It is the active counterpart to the cache. The cache is memory across chats (the outer loop); the loop engine is iterate-to-done within a task (the inner loop). Because each pass reads and writes the cache, the same goal run twice gets faster and future tasks inherit what it learned. It always stops honestly: success (verified), stuck (no progress, it asks for help), or incomplete (hit the iteration cap).
@@ -105,5 +109,6 @@ A background distiller catches learnings on chats where nobody saved anything. I
 - `/mneme:recall "<query>"` — search the cache.
 - `/mneme:status [prune] [--project]` — status, health, auto-capture state, and pruning.
 - `/mneme:lint [--project]` — read-only audit (dead links, orphans, INDEX drift, contradictions); fixes on confirmation.
+- `/mneme:ingest <source> [--wiki <name>] [--project]` — ingest a document into a wiki (Tier 2 knowledge, never injected).
 - `/mneme:review` — review pending auto-distilled notes; promote or discard each.
 - `/mneme:loop "<goal>" --done "<criterion>" [--max N]` — drive a goal to completion, verifying each pass.

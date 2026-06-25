@@ -5,4 +5,6 @@ test_engine_documents_phase1() {
   assert_contains "$body" "log.md" "engine documents the timeline log" || return 1
   assert_contains "$body" "/mneme:lint" "engine lists the lint command" || return 1
   assert_contains "$body" "Cross-ref" "engine documents cross-referencing" || return 1
+  assert_contains "$body" "Tier 2" "engine names the knowledge tier" || return 1
+  assert_contains "$body" "/mneme:ingest" "engine lists the ingest command" || return 1
 }
