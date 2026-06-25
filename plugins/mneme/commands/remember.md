@@ -34,6 +34,18 @@ Steps:
    `- [<Title>](<filename>.md) — <description>`
    If `INDEX.md` does not exist, create it with a `# Mneme cache` header first. One line per note.
 
-7. **Confirm** to the user in one or two lines: the note path, whether it was created or updated, and the description.
+7. **Cross-reference** (keeps the cache a graph, not a pile). Resolve the Mneme lib:
+   ```bash
+   mneme_lib="${CLAUDE_PLUGIN_ROOT:-}/hooks/scripts/lib"
+   [ -f "$mneme_lib/log.sh" ] || mneme_lib="$(dirname "$(find "$HOME/.claude/plugins" -path '*/mneme/hooks/scripts/lib/log.sh' 2>/dev/null | head -1)")"
+   . "$mneme_lib/md.sh"; . "$mneme_lib/links.sh"; . "$mneme_lib/log.sh"
+   ```
+   Pick at most **3** existing notes most genuinely related to this one (shared terms in the description/body, or the same `type`). For each, add the link both directions:
+   `mneme_links_add "<this-note-file>" "<their-slug>"` and `mneme_links_add "<their-note-file>" "<this-slug>"`.
+   Add nothing if there is no real relation; never exceed 3 touched notes (the index stays lean). If the lib will not resolve, add the `[[slug]]` links by hand with Edit instead.
+
+8. **Log the save.** `mneme_log_append "<target-cache-dir>" remember "<this-slug>"`. This appends to `log.md`, an append-only timeline that is never injected into a chat.
+
+9. **Confirm** to the user in one or two lines: the note path, whether it was created or updated, the description, and any notes it was cross-linked to.
 
 Lean-index rule: the index is injected into every chat, so keep descriptions tight and never let a note's body sprawl. One fact per file.

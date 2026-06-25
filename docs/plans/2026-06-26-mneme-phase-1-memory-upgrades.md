@@ -228,7 +228,7 @@ Replace it with these three steps:
    [ -f "$mneme_lib/log.sh" ] || mneme_lib="$(dirname "$(find "$HOME/.claude/plugins" -path '*/mneme/hooks/scripts/lib/log.sh' 2>/dev/null | head -1)")"
    . "$mneme_lib/md.sh"; . "$mneme_lib/links.sh"; . "$mneme_lib/log.sh"
    ```
-   Pick **at most 3** existing notes most genuinely related to this one (shared terms in the description/body, or the same `type`). For each, add the link both directions:
+   Pick at most **3** existing notes most genuinely related to this one (shared terms in the description/body, or the same `type`). For each, add the link both directions:
    `mneme_links_add "<this-note-file>" "<their-slug>"` and `mneme_links_add "<their-note-file>" "<this-slug>"`.
    Add nothing if there is no real relation; never exceed 3 touched notes (the index stays lean). If the lib will not resolve, add the `[[slug]]` links by hand with Edit instead.
 
