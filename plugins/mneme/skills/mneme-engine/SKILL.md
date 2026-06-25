@@ -60,13 +60,23 @@ Types:
 - Put detail in the note body, never in the index line.
 - If the index grows past ~300 lines or ~16 KB, prune (run `/mneme:status prune`). Past that size Claude Code truncates it and the cache silently stops loading.
 
+## Cross-ref on write — keep the cache a graph
+
+A note is worth more when it is connected. When `/mneme:remember` writes a note, it then links it to at most **3** existing notes it is genuinely related to (shared terms or the same `type`), adding the `[[slug]]` both directions via the tested `lib/links.sh` helper. The cap protects the lean index. Links live on a `Related:` line in the body; bodies are never injected, only the index is.
+
+## The timeline log (`log.md`)
+
+Each cache dir has an append-only `log.md` — one line per mutating action (`remember`, `promote`, `prune`, `recall-filed`, `lint-fix`). It is written by the commands via `lib/log.sh` (`mneme_log_append`) and read by `/mneme:status` (`mneme_log_tail`). Like note bodies, **`log.md` is never injected into a chat** — only `INDEX.md` loads. It is created lazily on the first write, so a fresh cache has none.
+
 ## Dedupe on write
 
 Before creating a note, glob the cache dir and grep for the same topic. If a note already covers it, UPDATE that file (and its index line) instead of adding a near-duplicate. Merge, do not multiply.
 
-## Pruning
+## Pruning and linting
 
-Periodically remove: near-duplicates, notes that are no longer true, and low-value notes that never get used. Always confirm with the user before deleting. Keep the index honest.
+`/mneme:status prune` is the light pass: remove near-duplicates, notes no longer true, and low-value notes that never get used (always confirm before deleting). `/mneme:lint` is the heavy audit: it reports dead `[[links]]`, orphan notes, INDEX-vs-files drift (mechanical, via the lib) plus contradictions and stale claims (semantic, by reading), and applies fixes only on confirmation. Both keep the index honest.
+
+`/mneme:recall` can also grow the cache: when it answers by synthesizing across two or more notes, it offers (opt-in) to file that synthesis back as a new, cross-referenced note. Recall is read-only unless you accept.
 
 ## How a skill reads or writes the cache
 
@@ -94,5 +104,6 @@ A background distiller catches learnings on chats where nobody saved anything. I
 - `/mneme:remember "<learning>" [--project]` — save a learning (applies the gate + dedupe).
 - `/mneme:recall "<query>"` — search the cache.
 - `/mneme:status [prune] [--project]` — status, health, auto-capture state, and pruning.
+- `/mneme:lint [--project]` — read-only audit (dead links, orphans, INDEX drift, contradictions); fixes on confirmation.
 - `/mneme:review` — review pending auto-distilled notes; promote or discard each.
 - `/mneme:loop "<goal>" --done "<criterion>" [--max N]` — drive a goal to completion, verifying each pass.

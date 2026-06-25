@@ -536,15 +536,11 @@ Insert this new section immediately BEFORE it:
 ```markdown
 ## Cross-ref on write — keep the cache a graph
 
-A note is worth more when it is connected. When `/mneme:remember` writes a note, it then links it to **at most 3** existing notes it is genuinely related to (shared terms or the same `type`), adding the `[[slug]]` both directions via the tested `lib/links.sh` helper. The cap protects the lean index. Links live on a `Related:` line in the body; bodies are never injected, only the index is.
+A note is worth more when it is connected. When `/mneme:remember` writes a note, it then links it to at most **3** existing notes it is genuinely related to (shared terms or the same `type`), adding the `[[slug]]` both directions via the tested `lib/links.sh` helper. The cap protects the lean index. Links live on a `Related:` line in the body; bodies are never injected, only the index is.
 
 ## The timeline log (`log.md`)
 
 Each cache dir has an append-only `log.md` — one line per mutating action (`remember`, `promote`, `prune`, `recall-filed`, `lint-fix`). It is written by the commands via `lib/log.sh` (`mneme_log_append`) and read by `/mneme:status` (`mneme_log_tail`). Like note bodies, **`log.md` is never injected into a chat** — only `INDEX.md` loads. It is created lazily on the first write, so a fresh cache has none.
-
-```
-This appears in the rendered section between Cross-ref and the lint paragraph; the inner fence is illustrative only.
-```
 
 Then find the `## Pruning` section:
 
