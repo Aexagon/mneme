@@ -19,4 +19,6 @@ Steps:
 
 4. If nothing matches, say so plainly and suggest the closest related notes by topic, if any.
 
-Keep the output scannable. Do NOT modify any files.
+5. **Offer to file the answer back** — only when you synthesized across **≥2 notes**. If answering required combining two or more notes, end by offering to save that synthesis as a new note (`reference` or `pattern`), cross-referenced to its sources. This is opt-in: do nothing unless the user confirms. On confirmation, prefer `/mneme:remember "<the synthesis>"` (it applies the gate, dedupes, cross-refs, and logs); or, if writing the note directly, also `mneme_log_append "<cache-dir>" recall-filed "<slug>"`. If you did not combine multiple notes, skip this step.
+
+Keep the output scannable. Recall is **read-only** by default — never modify a file unless the user accepts the file-back offer above.
