@@ -8,6 +8,16 @@ You are running the Mneme `/recall` command. Search the cache for: $ARGUMENTS
 
 Steps:
 
+**Wiki mode.** If the args contain `--wiki <name>`, do NOT search the lean cache. Instead query that corpus: resolve the home under bash (closing `SH` flush-left), then read `index.md` first and the relevant `pages/`, answer with citations to the page paths, and stop. You may offer to file the answer back as a new page in that corpus (`mneme_log_append "<corpus>" recall-filed "<slug>"`). Otherwise (no `--wiki`), do the cache search below.
+
+```bash
+bash <<'SH'
+mneme_lib="${CLAUDE_PLUGIN_ROOT:-}/hooks/scripts/lib"
+[ -f "$mneme_lib/log.sh" ] || mneme_lib="$(dirname "$(find "$HOME/.claude/plugins" -path '*/mneme/hooks/scripts/lib/log.sh' 2>/dev/null | head -1)")"
+. "$mneme_lib/wiki.sh"; echo "corpus: $(mneme_wiki_home)/<name>"
+SH
+```
+
 1. Search both caches for the query (case-insensitive), across note bodies and descriptions:
    - global: `~/.claude/mneme/cache/` (i.e. `$HOME/.claude/mneme/cache/`)
    - project (only if it exists): `./.mneme/cache/`
