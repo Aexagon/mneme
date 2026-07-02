@@ -23,6 +23,36 @@ test_md_index_upsert_and_remove() {
   rm -rf "$tmp"
 }
 
+test_md_index_upsert_concurrent() {
+  local root; root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  . "$root/plugins/mneme/hooks/scripts/lib/md.sh"
+  # Old unlocked read-modify-write loses updates nondeterministically; loop 5×
+  # (fresh dir each time) so a regression can't slip through on a lucky schedule.
+  local iter i tmp n
+  for iter in 1 2 3 4 5; do
+    tmp="$(mktemp -d)"
+    for i in 1 2 3 4 5 6 7 8; do
+      mneme_md_index_upsert "$tmp" "fact-note-$i.md" "Note $i" "desc $i" &
+    done
+    wait
+    n="$(grep -c 'fact-note-.*\.md' "$tmp/INDEX.md")"
+    rm -rf "$tmp"
+    assert_eq "$n" "8" "all 8 concurrent upserts survive (iter $iter)" || return 1
+  done
+}
+
+test_md_index_upsert_replaces_under_lock() {
+  local root tmp; root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  . "$root/plugins/mneme/hooks/scripts/lib/md.sh"
+  tmp="$(mktemp -d)"
+  mneme_md_index_upsert "$tmp" "fact-x.md" "X" "first"
+  mneme_md_index_upsert "$tmp" "fact-x.md" "X" "second"
+  local body; body="$(cat "$tmp/INDEX.md")"
+  assert_eq "$(grep -c 'fact-x.md' "$tmp/INDEX.md")" "1" "upsert replaces, not duplicates, under lock" || { rm -rf "$tmp"; return 1; }
+  assert_contains "$body" "[X](fact-x.md) — second" "latest desc wins" || { rm -rf "$tmp"; return 1; }
+  rm -rf "$tmp"
+}
+
 test_md_index_drift() {
   local root tmp; root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   . "$root/plugins/mneme/hooks/scripts/lib/md.sh"
