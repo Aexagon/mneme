@@ -112,7 +112,10 @@ PY
 [ -n "$PROMPT" ] || exit 0
 
 # 6) Ask the model (unless a test stub is supplied). MNEME_DISTILL=1 guards the child.
-if [ -n "${MNEME_DISTILL_STUB:-}" ] && [ -f "$MNEME_DISTILL_STUB" ]; then
+# The stub path injects a canned model response and is honored ONLY under test:
+# both MNEME_TEST=1 AND MNEME_DISTILL_STUB (a readable file) must be set. This keeps
+# the fake-response path from ever firing in a real session.
+if [ "${MNEME_TEST:-}" = "1" ] && [ -n "${MNEME_DISTILL_STUB:-}" ] && [ -f "$MNEME_DISTILL_STUB" ]; then
   RESPONSE="$(cat "$MNEME_DISTILL_STUB")"
 else
   command -v claude >/dev/null 2>&1 || exit 0
@@ -125,26 +128,64 @@ fi
 # python's stdin, so piping the response in would be silently discarded.
 RESP_FILE="$(mktemp)"
 printf '%s' "$RESPONSE" > "$RESP_FILE"
-python3 - "$INBOX_DIR" "$RESP_FILE" <<'PY'
-import json, sys, os, re
-inbox_dir, resp_file = sys.argv[1], sys.argv[2]
+# The python step writes one status token (arg 3) to a file: "wrote=N" on success
+# (N notes written, possibly 0) or "parse_error" when no JSON array could be
+# recovered. Bash reads it below for the diagnostics log so a silent parse failure
+# is answerable. A status file (not stdout capture) keeps the heredoc off a command
+# substitution, which would mis-parse the bracket/quote characters in the script.
+STATUS_FILE="$(mktemp)"
+python3 - "$INBOX_DIR" "$RESP_FILE" "$STATUS_FILE" <<'PY'
+import json, sys, os, re, tempfile
+inbox_dir, resp_file, status_file = sys.argv[1], sys.argv[2], sys.argv[3]
+
+# Types the distiller's own prompt requests. Anything else is coerced to "fact".
+ALLOWED_TYPES = {"fact", "preference", "pattern", "reference", "project"}
+
+def status(tok):
+    with open(status_file, "w", encoding="utf-8") as f:
+        f.write(tok)
+
 with open(resp_file, encoding="utf-8") as f:
     raw = f.read().strip()
 raw = re.sub(r'^```(?:json)?|```$', '', raw, flags=re.MULTILINE).strip()
-m = re.search(r'\[.*\]', raw, re.DOTALL)
-if not m:
+
+def extract_array(text):
+    # Prefer a clean parse of the whole response.
+    try:
+        val = json.loads(text)
+        if isinstance(val, list):
+            return val
+    except Exception:
+        pass
+    # Otherwise scan each open bracket and let the decoder find the first valid JSON
+    # array, rather than a greedy first-open .. last-close span that breaks on any
+    # trailing text.
+    dec = json.JSONDecoder()
+    for i, ch in enumerate(text):
+        if ch != "[":
+            continue
+        try:
+            val, _ = dec.raw_decode(text, i)
+        except ValueError:
+            continue
+        if isinstance(val, list):
+            return val
+    return None
+
+notes = extract_array(raw)
+if notes is None:
+    status("parse_error")
     sys.exit(0)
-try:
-    notes = json.loads(m.group(0))
-except Exception:
-    sys.exit(0)
-if not isinstance(notes, list) or not notes:
+if not notes:
+    status("wrote=0")
     sys.exit(0)
 
 def slug(s):
     return re.sub(r'[^a-z0-9]+', '-', (s or '').lower()).strip('-') or 'note'
 
 os.makedirs(inbox_dir, exist_ok=True)
+inbox_real = os.path.realpath(inbox_dir)
+wrote = 0
 for n in notes:
     if not isinstance(n, dict):
         continue
@@ -153,11 +194,36 @@ for n in notes:
         continue
     name = slug(n.get("name") or n.get("description"))
     desc = (n.get("description") or "").strip().replace("\n", " ")
+    # Path-traversal defense: whitelist the type, then slug it (belt), then verify
+    # the resolved path stays inside the inbox (braces). A response with e.g.
+    # a type of ../cache/fact-x must never escape the review-gated inbox.
     typ = (n.get("type") or "fact").strip()
-    with open(os.path.join(inbox_dir, f"{typ}-{name}.md"), "w", encoding="utf-8") as f:
-        f.write(f"---\nname: {name}\ndescription: {desc}\ntype: {typ}\nsource: auto\n---\n\n{body}\n")
+    if typ not in ALLOWED_TYPES:
+        typ = "fact"
+    typ = slug(typ)
+    dest = os.path.join(inbox_dir, f"{typ}-{name}.md")
+    dest_real = os.path.realpath(dest)
+    if dest_real != inbox_real and not dest_real.startswith(inbox_real + os.sep):
+        continue
+    content = f"---\nname: {name}\ndescription: {desc}\ntype: {typ}\nsource: auto\n---\n\n{body}\n"
+    # Atomic write: temp file IN the inbox, then rename into place.
+    fd, tmp = tempfile.mkstemp(dir=inbox_dir, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.replace(tmp, dest)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        continue
+    wrote += 1
+
+status(f"wrote={wrote}")
 PY
-rm -f "$RESP_FILE"
+DISTILL_STATUS="$(cat "$STATUS_FILE" 2>/dev/null || true)"
+rm -f "$RESP_FILE" "$STATUS_FILE"
 
 # Diagnostics (local only): a background process that fails silently is a trap.
 # One line per enabled run so "why did nothing get captured?" is answerable
@@ -167,6 +233,6 @@ if [ "${MNEME_DISTILL_QUIET:-0}" != "1" ]; then
   NOW="$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo now)"
   INBOX_N="$(find "$INBOX_DIR" -maxdepth 1 -name '*.md' ! -name '_*' 2>/dev/null | wc -l | tr -d ' ')"
   HEAD="$(printf '%s' "$RESPONSE" | tr '\n\t' '  ' | cut -c1-160)"
-  printf '%s  resp_len=%s  inbox_now=%s  head=%s\n' "$NOW" "${#RESPONSE}" "$INBOX_N" "$HEAD" >> "$LOG" 2>/dev/null || true
+  printf '%s  resp_len=%s  status=%s  inbox_now=%s  head=%s\n' "$NOW" "${#RESPONSE}" "${DISTILL_STATUS:-none}" "$INBOX_N" "$HEAD" >> "$LOG" 2>/dev/null || true
 fi
 exit 0
