@@ -8,7 +8,7 @@ You are running the Mneme `/mneme:lint` command. Audit the cache and produce a *
 
 Args: $ARGUMENTS
 
-1. **Scope.** Default target is the global cache `~/.claude/mneme/cache/` (i.e. `$HOME/.claude/mneme/cache/`). If the args contain `--project`, target `./.mneme/cache/`. If they contain `--wiki <name>`, target that corpus's pages: resolve `<cache-dir>` to `"$(mneme_wiki_home)/<name>/pages"` (the bash block below sources `lib/wiki.sh`). For a wiki, run the dead-link and orphan checks over the pages; skip the INDEX-drift check (a wiki `index.md` is hand-authored, not the lean cache format). (The spine target arrives in Phase 3.)
+1. **Scope.** Default target is the global cache `~/.claude/mneme/cache/` (i.e. `$HOME/.claude/mneme/cache/`). If the args contain `--project`, target `./.mneme/cache/`. If they contain `--wiki <name>`, target that corpus's pages: resolve `<cache-dir>` to `"$(mneme_wiki_home)/<name>/pages"` (the bash block below sources `lib/wiki.sh`). For a wiki, run the dead-link and orphan checks over the pages; skip the INDEX-drift check (a wiki `index.md` is hand-authored, not the lean cache format).
 
 2. **Run the mechanical checks under bash.** The helpers are bash functions and your default shell may be zsh, so invoke bash explicitly and keep the closing `SH` flush-left. Substitute `<cache-dir>` and read the output:
 

@@ -42,9 +42,12 @@ One fact per file. Filename: `<type>-<kebab-slug>.md`.
 name: <kebab-slug>
 description: <one line — this is exactly what shows in INDEX.md>
 type: fact | preference | pattern | reference | project
+source: auto | (omit for hand-saved)
 ---
 <the durable, reusable content. Keep it tight. Link related notes with [[other-slug]].>
 ```
+
+`source` is optional provenance: `auto` marks a note the background distiller captured; omit the line entirely for notes saved by hand via `/mneme:remember`.
 
 Types:
 - **fact** — something true about the world, a system, a person.

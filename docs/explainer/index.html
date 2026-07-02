@@ -113,8 +113,13 @@
   .stratum--live .attr dd{ color:var(--cream); }
   .stratum--live .tier-no{ color:oklch(0.72 0.06 150); }
 
-  .stratum--soon{ background:repeating-linear-gradient(135deg, var(--surface) 0 10px, var(--tint) 10px 20px); }
-  .stratum--soon .s-head{ }
+  /* tier 2 — a lighter live variant, so the two read as siblings not identical twins */
+  .stratum--know{ background:var(--green); color:var(--cream); }
+  .stratum--know h3{ color:var(--cream); }
+  .stratum--know .s-desc{ color:oklch(0.9 0.03 150); }
+  .stratum--know .attr dt{ color:oklch(0.82 0.04 150); }
+  .stratum--know .attr dd{ color:var(--cream); }
+  .stratum--know .tier-no{ color:oklch(0.78 0.06 150); }
 
   .s-head{ }
   .tier-no{ font-family:var(--mono); font-size:0.78rem; color:var(--green); margin:0 0 0.5rem; }
@@ -122,7 +127,6 @@
   .badge{ display:inline-block; margin-top:0.9rem; font-family:var(--mono); font-size:0.72rem;
     padding:0.28rem 0.6rem; border-radius:999px; }
   .badge--live{ background:var(--amber); color:var(--green-deep); font-weight:500; }
-  .badge--soon{ background:transparent; color:var(--green); border:1px dashed var(--line-strong); }
 
   .s-body{ }
   .s-desc{ margin:0 0 1.5rem; font-size:1.05rem; line-height:1.55; color:var(--ink); max-width:48ch; }
@@ -138,6 +142,29 @@
   .base .prim{ font-family:var(--mono); font-size:0.76rem; color:var(--green);
     background:var(--surface); border:1px solid var(--line); border-radius:0.45rem; padding:0.28rem 0.55rem; }
   .base .you{ margin-left:auto; color:var(--ink-soft); font-size:0.9rem; font-style:italic; font-family:var(--serif); }
+
+  /* ---- the memory loop (numbered flow) ---- */
+  .loopflow{ margin-top:clamp(2rem,5vw,3rem); display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(13rem,1fr)); gap:1rem; }
+  .step{ position:relative; border:1px solid var(--line-strong); border-radius:0.9rem;
+    background:var(--surface); padding:1.3rem 1.3rem 1.4rem; }
+  .step .n{ display:inline-flex; align-items:center; justify-content:center;
+    width:1.9rem; height:1.9rem; border-radius:50%; background:var(--green-deep); color:var(--cream);
+    font-family:var(--mono); font-size:0.85rem; font-weight:500; margin-bottom:0.8rem; }
+  .step h3{ font-size:1.12rem; font-weight:600; }
+  .step p{ margin:0.5rem 0 0; color:var(--ink-soft); font-size:0.96rem; line-height:1.5; }
+  .step p b{ color:var(--ink); font-weight:600; }
+  .step .cmd{ font-family:var(--mono); font-size:0.78rem; color:var(--green); }
+  /* the gate step — the one that matters most */
+  .step--gate{ background:var(--green-deep); border-color:var(--green-deep); }
+  .step--gate h3{ color:var(--cream); }
+  .step--gate .n{ background:var(--amber); color:var(--green-deep); }
+  .step--gate p{ color:oklch(0.88 0.03 150); }
+  .step--gate p b{ color:var(--cream); }
+  .step--gate .cmd{ color:var(--amber); }
+  .gate-note{ margin-top:1.4rem; font-family:var(--serif); font-style:italic;
+    font-size:clamp(1.05rem,1rem+0.5vw,1.35rem); color:var(--green-deep); max-width:40ch; }
+  .gate-note b{ font-style:normal; font-weight:600; color:var(--amber-ink); }
 
   /* ---- use cases ---- */
   .lane{ display:grid; grid-template-columns:minmax(0,16rem) 1fr; gap:clamp(0.8rem,3vw,3rem);
@@ -160,16 +187,72 @@
     border-radius:0.5rem; padding:0.6rem 0.8rem; display:inline-block; }
   .loopline .said::before,.loopline .said::after{ content:""; }
 
-  /* ---- today vs gap ---- */
+  /* ---- command reference (card grid) ---- */
+  .cmdgrid{ margin-top:clamp(2rem,5vw,3rem); display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(19rem,1fr)); gap:1rem; }
+  .cmd-card{ border:1px solid var(--line-strong); border-radius:0.9rem; background:var(--surface);
+    padding:1.3rem 1.4rem 1.5rem; display:grid; gap:0.55rem; align-content:start; }
+  .cmd-card .name{ font-family:var(--mono); font-size:0.92rem; color:var(--green-deep); font-weight:500; }
+  .cmd-card .when{ color:var(--ink-soft); font-size:0.96rem; line-height:1.5; }
+  .cmd-card .when b{ color:var(--ink); font-weight:600; }
+  .cmd-card--star{ background:var(--green-deep); border-color:var(--green-deep); }
+  .cmd-card--star .name{ color:var(--amber); }
+  .cmd-card--star .when{ color:oklch(0.88 0.03 150); }
+  .cmd-card--star .when b{ color:var(--cream); }
+  .cmd-tag{ justify-self:start; font-family:var(--mono); font-size:0.66rem; letter-spacing:0.03em;
+    text-transform:uppercase; background:var(--amber); color:var(--green-deep);
+    padding:0.2rem 0.5rem; border-radius:999px; }
+
+  /* ---- getting started (steps) ---- */
+  .start{ margin-top:clamp(2rem,5vw,3rem); display:grid; gap:1rem; }
+  .start-step{ display:grid; grid-template-columns:auto 1fr; gap:1rem 1.2rem; align-items:start;
+    border:1px solid var(--line-strong); border-radius:0.9rem; background:var(--surface);
+    padding:clamp(1.2rem,3vw,1.7rem); }
+  .start-step .n{ display:inline-flex; align-items:center; justify-content:center;
+    width:1.9rem; height:1.9rem; border-radius:50%; background:var(--green-deep); color:var(--cream);
+    font-family:var(--mono); font-size:0.85rem; }
+  .start-step h3{ font-size:1.15rem; font-weight:600; margin-bottom:0.4rem; }
+  .start-step p{ margin:0; color:var(--ink-soft); font-size:0.98rem; }
+  .start-step p b{ color:var(--ink); font-weight:600; }
+  .code{ display:block; font-family:var(--mono); font-size:0.82rem; color:var(--green);
+    background:var(--tint); border:1px solid var(--line); border-radius:0.5rem;
+    padding:0.7rem 0.85rem; margin-top:0.7rem; white-space:pre; overflow-x:auto; }
+  .rhythm{ margin-top:1.6rem; display:grid; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));
+    gap:1rem; }
+  .beat{ border-left:3px solid var(--amber); padding:0.2rem 0 0.2rem 1rem; }
+  .beat .wk{ font-family:var(--mono); font-size:0.74rem; color:var(--amber-ink); letter-spacing:0.02em; }
+  .beat p{ margin:0.35rem 0 0; color:var(--ink-soft); font-size:0.96rem; line-height:1.5; }
+  .beat p b{ color:var(--ink); font-weight:600; }
+
+  /* ---- where your data lives ---- */
+  .folders{ margin-top:clamp(2rem,5vw,3rem); display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(16rem,1fr)); gap:1rem; }
+  .folder{ border:1px solid var(--line-strong); border-radius:0.9rem; background:var(--surface);
+    padding:1.3rem 1.4rem 1.5rem; }
+  .folder .path{ font-family:var(--mono); font-size:0.8rem; color:var(--green-deep); font-weight:500;
+    word-break:break-all; }
+  .folder .trust{ display:inline-block; margin:0.7rem 0 0.6rem; font-family:var(--mono); font-size:0.68rem;
+    letter-spacing:0.03em; padding:0.22rem 0.55rem; border-radius:999px; }
+  .trust--waiting{ background:var(--tint); color:var(--amber-ink); border:1px dashed var(--line-strong); }
+  .trust--trusted{ background:var(--amber); color:var(--green-deep); font-weight:500; }
+  .trust--ondemand{ background:var(--cream); color:var(--green-deep); border:1px solid var(--line-strong); }
+  .folder p{ margin:0; color:var(--ink-soft); font-size:0.96rem; line-height:1.5; }
+  .folder p b{ color:var(--ink); font-weight:600; }
+  .ownership{ margin-top:1.6rem; padding:clamp(1.2rem,3vw,1.6rem) clamp(1.3rem,3vw,1.8rem);
+    background:var(--green-deep); border-radius:0.9rem; color:var(--cream); }
+  .ownership p{ margin:0; color:oklch(0.9 0.03 150); font-size:1.02rem; line-height:1.55; max-width:60ch; }
+  .ownership p b{ color:var(--cream); font-weight:600; }
+
+  /* ---- today at a glance ---- */
   .split{ display:grid; grid-template-columns:repeat(auto-fit,minmax(20rem,1fr)); gap:1.25rem;
     margin-top:clamp(2rem,5vw,3rem); }
   .panel{ border:1px solid var(--line-strong); border-radius:0.9rem; padding:clamp(1.4rem,3vw,2rem);
     background:var(--surface); }
-  .panel--gap{ background:var(--tint); border-style:dashed; }
+  .panel--note{ background:var(--tint); }
   .panel h3{ font-size:1.25rem; font-weight:600; display:flex; align-items:center; gap:0.6rem; }
   .dot{ width:0.6rem; height:0.6rem; border-radius:50%; flex:none; }
   .dot--on{ background:var(--amber); }
-  .dot--off{ background:transparent; border:1.5px solid var(--green); }
+  .dot--note{ background:transparent; border:1.5px solid var(--green); }
   .panel p{ margin:0.9rem 0 0; color:var(--ink-soft); }
   .panel p b{ color:var(--ink); font-weight:600; }
   .panel ul{ margin:1rem 0 0; padding-left:1.1rem; color:var(--ink); }
@@ -208,6 +291,7 @@
     .vrow{ grid-template-columns:1fr; gap:0.4rem; }
     .attr{ grid-template-columns:repeat(2,1fr); }
     .base .you{ margin-left:0; width:100%; }
+    .start-step{ grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -218,7 +302,7 @@
     <div class="topline rise">
       <span class="mark">Mn<b>e</b>me</span>
       <span class="etym">Greek: memory</span>
-      <span class="ver">v0.2.0</span>
+      <span class="ver">v0.3.0</span>
     </div>
     <div class="hero">
       <h1 class="rise d1">The memory Claude&nbsp;Code keeps between sessions.</h1>
@@ -226,7 +310,7 @@
       <div class="cmds rise d3">
         <span class="chip">/mneme:remember <span>save a learning</span></span>
         <span class="chip">/mneme:recall <span>search it</span></span>
-        <span class="chip">/mneme:review <span>pull the inbox</span></span>
+        <span class="chip">/mneme:review <span>approve the inbox</span></span>
         <span class="chip">/mneme:loop <span>drive a goal</span></span>
       </div>
     </div>
@@ -234,10 +318,53 @@
 </div>
 
 <div class="wrap">
+  <section id="loop">
+    <p class="kicker">the one idea to hold onto</p>
+    <h2 class="h2">How the memory works</h2>
+    <p class="intro">The whole thing is a loop. A chat happens, useful things get noticed, they wait for your say-so, and once you approve them the next chat already knows. Here is the whole cycle, start to finish.</p>
+
+    <div class="loopflow">
+      <div class="step">
+        <span class="n">1</span>
+        <h3>You have a chat</h3>
+        <p>You work with Claude Code as usual. Nothing about your workflow changes.</p>
+      </div>
+      <div class="step">
+        <span class="n">2</span>
+        <h3>Notes get taken</h3>
+        <p>When the chat ends, Mneme quietly reads it and drafts short notes of anything <b>durable and reusable</b> — a preference, a fix, a fact.</p>
+      </div>
+      <div class="step">
+        <span class="n">3</span>
+        <h3>They wait in an inbox</h3>
+        <p>Drafts land in a <b>waiting room</b>. They are not trusted yet, and they are never shown to a future chat.</p>
+      </div>
+      <div class="step step--gate">
+        <span class="n">4</span>
+        <h3>You approve them</h3>
+        <p>You run <span class="cmd">/mneme:review</span> and decide, one by one: <b>keep it or throw it away</b>. This is the gate.</p>
+      </div>
+      <div class="step">
+        <span class="n">5</span>
+        <h3>They enter the notebook</h3>
+        <p>Approved notes move into the <b>trusted notebook</b>. Discarded ones are gone.</p>
+      </div>
+      <div class="step">
+        <span class="n">6</span>
+        <h3>The next chat knows</h3>
+        <p>Every chat after that <b>opens already knowing</b> the approved notes. The loop begins again.</p>
+      </div>
+    </div>
+
+    <p class="gate-note">Nothing enters your trusted memory without your approval. <b>Auto-drafted notes only ever sit in the waiting room</b> until you say yes. That is the whole promise: the machine proposes, you decide.</p>
+  </section>
+</div>
+
+<div class="wrap">
   <section id="model">
     <p class="kicker">the shape of it</p>
     <h2 class="h2">Two tiers, one engine.</h2>
-    <p class="intro">Mneme is a <strong>memory</strong> today. The same markdown engine extends to a <strong>knowledge base</strong> over documents you curate. Knowing which is which is the whole map, because the two pull in opposite directions: one stays small so it can load everywhere, the other is free to grow because it never loads uninvited.</p>
+    <p class="intro">Mneme keeps two kinds of memory on the same simple machinery, and knowing which is which is the whole map. They pull in opposite directions: one stays small so it can load into every chat, the other is free to grow because it never loads uninvited.</p>
 
     <div class="archive">
       <div class="stratum stratum--live">
@@ -247,7 +374,7 @@
           <span class="badge badge--live">live now</span>
         </div>
         <div class="s-body">
-          <p class="s-desc">A lean, gate-kept set of notes that loads into every chat. It stays small on purpose, because anything injected into the context window has to earn its room. It learns from your conversations.</p>
+          <p class="s-desc">A lean, gate-kept set of notes that loads into every chat. It stays small on purpose, because anything injected into the context window — the working memory a chat can see — has to earn its room. It learns from your conversations.</p>
           <dl class="attr">
             <div><dt>loaded</dt><dd>every session</dd></div>
             <div><dt>source</dt><dd>your chats</dd></div>
@@ -256,18 +383,18 @@
         </div>
       </div>
 
-      <div class="stratum stratum--soon">
+      <div class="stratum stratum--know">
         <div class="s-head">
           <p class="tier-no">tier 2</p>
           <h3>Knowledge</h3>
-          <span class="badge badge--soon">on the roadmap</span>
+          <span class="badge badge--live">live now</span>
         </div>
         <div class="s-body">
-          <p class="s-desc">A wiki Mneme maintains over a corpus you point it at: a research topic, a client, a book. Read only when you ask, so it can compound without ever taxing a chat. It learns from your documents.</p>
+          <p class="s-desc">A wiki Mneme maintains over a set of documents you point it at — a research topic, a client, a book. You build it with <span class="mono">/mneme:ingest</span>, search it with <span class="mono">/mneme:recall "&lt;question&gt;" --wiki &lt;name&gt;</span>, and tidy it with <span class="mono">/mneme:lint --wiki &lt;name&gt;</span>. It is read only when you ask, so it can grow without ever crowding a chat. It learns from your documents.</p>
           <dl class="attr">
             <div><dt>loaded</dt><dd>on demand</dd></div>
             <div><dt>source</dt><dd>your files</dd></div>
-            <div><dt>size</dt><dd>compounds</dd></div>
+            <div><dt>size</dt><dd>free to grow</dd></div>
           </dl>
         </div>
       </div>
@@ -284,17 +411,57 @@
 </div>
 
 <div class="wrap">
+  <section id="commands">
+    <p class="kicker">the whole toolkit</p>
+    <h2 class="h2">Seven commands, and when to reach for each</h2>
+    <p class="intro">You will use two of these most days and the rest now and then. If you only remember one, remember <span class="mono">/mneme:review</span> — that is the habit that makes the whole thing work.</p>
+
+    <div class="cmdgrid">
+      <div class="cmd-card">
+        <span class="name">/mneme:remember</span>
+        <span class="when"><b>Save a learning right now.</b> You tell it something worth keeping and it files a note on the spot — no waiting room, no approval needed, because you said it on purpose.</span>
+      </div>
+      <div class="cmd-card">
+        <span class="name">/mneme:recall</span>
+        <span class="when"><b>Search your saved notes</b> for something you half-remember telling it. Add <span class="mono">--wiki &lt;name&gt;</span> to search a knowledge wiki instead of your everyday memory.</span>
+      </div>
+      <div class="cmd-card">
+        <span class="name">/mneme:status</span>
+        <span class="when"><b>A quick health check.</b> How much is saved, whether anything is waiting for you to review, and whether the memory is getting too big for its own good.</span>
+      </div>
+      <div class="cmd-card cmd-card--star">
+        <span class="cmd-tag">the weekly habit</span>
+        <span class="name">/mneme:review</span>
+        <span class="when"><b>Approve or discard</b> the notes waiting in the inbox. This is the one habit to build — <b>a couple of minutes, once a week</b>. Nothing reaches trusted memory until you do it.</span>
+      </div>
+      <div class="cmd-card">
+        <span class="name">/mneme:lint</span>
+        <span class="when"><b>A deeper tidy-up</b> than status. It finds broken links between notes, notes nothing points to, and any two notes that contradict each other — and fixes them only after you confirm.</span>
+      </div>
+      <div class="cmd-card">
+        <span class="name">/mneme:ingest</span>
+        <span class="when"><b>Add a whole document</b> — a file or a web page — into a knowledge wiki. Mneme reads it, summarizes it into pages, and files it so you can ask questions about it later.</span>
+      </div>
+      <div class="cmd-card">
+        <span class="name">/mneme:loop</span>
+        <span class="when"><b>Give it a goal and a "done" test.</b> It keeps working, checking its own result, and retrying until the goal is met or it honestly reports it is stuck — saving what it learns along the way.</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
   <section id="uses">
     <p class="kicker">in practice</p>
     <h2 class="h2">What people do with it</h2>
-    <p class="intro">Everything below works on the memory tier that ships today. The pattern is the same each time: tell Claude once, and every future session already knows.</p>
+    <p class="intro">The pattern is the same each time: tell Claude once, and every future session already knows.</p>
 
     <div class="lane">
-      <div class="lane-name">Developers<span class="who">the people who can install it today</span></div>
+      <div class="lane-name">Developers<span class="who">house rules that stick</span></div>
       <ul class="uses">
         <li>
           <span class="said">Use pnpm, tests are vitest in __tests__, never touch /legacy.</span>
-          <span class="then">Said once, <b>known in every future session on that repo</b>. No more re-explaining the house rules after each /clear.</span>
+          <span class="then">Said once, <b>known in every future session on that repo</b>. No more re-explaining the house rules after each fresh start.</span>
         </li>
         <li>
           <span class="said">The flaky CI test is a timezone bug. Pin TZ=UTC in setup.</span>
@@ -305,7 +472,7 @@
           <span class="then">A preference that <b>follows you into every repo</b>, not one project's config file.</span>
         </li>
         <li>
-          <span class="said">Commit the project cache into the repo.</span>
+          <span class="said">Commit the project memory into the repo.</span>
           <span class="then">Now <b>every teammate's Claude inherits the same hard-won context</b>. Onboarding that ships with the code.</span>
         </li>
       </ul>
@@ -321,6 +488,10 @@
         <li>
           <span class="said">Our packages, pricing, and who's who.</span>
           <span class="then">Captured once and <b>carried into every chat about the business</b>.</span>
+        </li>
+        <li>
+          <span class="said">Ingest these 40 research papers into a wiki, then let me ask across them.</span>
+          <span class="then">Now the knowledge tier holds the whole stack. Ask a question, <b>get an answer drawn from all of them, with citations</b> — read only when you ask, never taxing your everyday chats.</span>
         </li>
       </ul>
     </div>
@@ -338,23 +509,96 @@
 </div>
 
 <div class="wrap">
+  <section id="start">
+    <p class="kicker">from install to habit</p>
+    <h2 class="h2">Getting started</h2>
+    <p class="intro">Three lines to install, then one small ritual to keep. Setting it up takes a minute; the payoff builds over the weeks that follow.</p>
+
+    <div class="start">
+      <div class="start-step">
+        <span class="n">1</span>
+        <div>
+          <h3>Add the marketplace and install</h3>
+          <p>In Claude Code, run these two commands:</p>
+          <code class="code">/plugin marketplace add Aexagon/mneme
+/plugin install mneme@mneme</code>
+        </div>
+      </div>
+      <div class="start-step">
+        <span class="n">2</span>
+        <div>
+          <h3>Restart the session</h3>
+          <p>Start a fresh chat. At the top you should see the Mneme memory load in — <b>that line at the top is proof it is working</b>. On day one it will be nearly empty, which is exactly right.</p>
+        </div>
+      </div>
+      <div class="start-step">
+        <span class="n">3</span>
+        <div>
+          <h3>Make review a weekly ritual</h3>
+          <p>Put <b>/mneme:review on your Monday checklist</b>. A couple of minutes to approve the notes that piled up over the week is all it takes to keep the memory sharp and trustworthy.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rhythm">
+      <div class="beat">
+        <span class="wk">week 1</span>
+        <p>Feels normal. Little is saved yet, so chats behave the way they always have. That is expected — <b>it is filling the waiting room</b>.</p>
+      </div>
+      <div class="beat">
+        <span class="wk">week 2 and on</span>
+        <p>As you approve notes each week, chats <b>start already knowing your context</b> — your preferences, your projects, the fixes you found once. Every week it knows a little more.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section id="data">
+    <p class="kicker">plain files, your machine, nobody else's</p>
+    <h2 class="h2">Where your data lives</h2>
+    <p class="intro">Everything Mneme knows is stored as plain text files on your own computer. You can open them, read them, edit them, or delete them yourself. Nothing is uploaded, synced to a cloud, or sent anywhere.</p>
+
+    <div class="folders">
+      <div class="folder">
+        <span class="path">~/.claude/mneme/inbox/</span>
+        <span class="trust trust--waiting">the waiting room</span>
+        <p>Where auto-drafted notes sit <b>before you approve them</b>. Nothing here is trusted and nothing here is ever shown to a chat. <span class="mono">/mneme:review</span> empties it.</p>
+      </div>
+      <div class="folder">
+        <span class="path">~/.claude/mneme/cache/</span>
+        <span class="trust trust--trusted">the trusted notebook</span>
+        <p>Your everyday memory — the notes you saved or approved. <b>This is what loads into every chat.</b> Kept small on purpose so it always fits.</p>
+      </div>
+      <div class="folder">
+        <span class="path">~/.claude/mneme/wiki/</span>
+        <span class="trust trust--ondemand">read on demand</span>
+        <p>The knowledge wikis you build from documents. Can be large. <b>Read only when you ask</b> for it, never loaded into a chat on its own.</p>
+      </div>
+    </div>
+
+    <div class="ownership">
+      <p>These live under <b>~/.claude/mneme/</b> on your machine — the global memory that follows you everywhere. A project can also keep its own overlay in a <b>.mneme</b> folder inside that project, layered on top when you work there. Every note is a plain markdown file you can read with any text editor. <b>Nothing leaves your computer</b>: no cloud, no accounts, no tracking. To forget something, delete the file.</p>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
   <section id="today">
-    <p class="kicker">be honest with the people you send it to</p>
-    <h2 class="h2">What is real today, and what is not yet</h2>
+    <p class="kicker">what you actually get</p>
+    <h2 class="h2">Both tiers are live today</h2>
     <div class="split">
       <div class="panel">
-        <h3><span class="dot dot--on"></span>Works now</h3>
-        <p>Anything Mneme can learn <b>from a conversation</b>. Preferences, fixes, conventions, client facts, project context. You work, it remembers, the next chat is sharper.</p>
+        <h3><span class="dot dot--on"></span>Learning from your chats</h3>
+        <p>Preferences, fixes, conventions, client facts, project context. You work, Mneme drafts, <b>you approve</b>, and the next chat is sharper. This is tier 1, the everyday memory.</p>
       </div>
-      <div class="panel panel--gap">
-        <h3><span class="dot dot--off"></span>Not yet</h3>
-        <p>Pointing it at <b>a folder of documents</b> and asking questions that synthesize across them. That is tier 2.</p>
-        <ul>
-          <li>Ingest 40 papers, then ask across them</li>
-          <li>Build a companion wiki as you read a book</li>
-          <li>Keep a living analysis current from clippings</li>
-        </ul>
-        <p>If someone installs Mneme expecting this today, they bounce. Say so plainly in the README.</p>
+      <div class="panel">
+        <h3><span class="dot dot--on"></span>Learning from your documents</h3>
+        <p>Point it at a folder of papers, a long report, or a web page. It builds a <b>wiki</b> you can question across — with citations — that never crowds your everyday chats. This is tier 2, the knowledge base.</p>
+      </div>
+      <div class="panel panel--note">
+        <h3><span class="dot dot--note"></span>Honest about its edges</h3>
+        <p>Your memory <b>stays on the machine it was made on</b>. There is no cross-machine sync and no shared team cache built in — though because every note is a plain file, you can commit a project's memory to git and share it that way. And the auto-drafted notes always <b>wait for your approval</b>; that gate is a feature, not a limitation.</p>
       </div>
     </div>
   </section>
@@ -398,11 +642,11 @@
 <div class="wrap">
   <footer>
     <div class="foot">
-      <span class="nm">Mneme v0.2.0</span>
+      <span class="nm">Mneme v0.3.0</span>
       <span class="sep">/</span>
       <span>memory tier live</span>
       <span class="sep">/</span>
-      <span>knowledge tier on the roadmap</span>
+      <span>knowledge tier live</span>
       <a href="https://github.com/Aexagon/mneme">github.com/Aexagon/mneme</a>
     </div>
   </footer>

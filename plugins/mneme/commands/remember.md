@@ -26,9 +26,11 @@ Steps:
    name: <kebab-slug>
    description: <one line; this is what shows in the index>
    type: <type>
+   source: auto | (omit for hand-saved)
    ---
    <the durable, reusable content. Link related notes with [[other-slug]].>
    ```
+   `source` is optional: omit it entirely for notes saved via `/mneme:remember` (this command). It only appears as `source: auto` on notes the background auto-distiller writes, as provenance so you can tell a hand-saved note from a captured one.
 
 6. **Update the index** `INDEX.md` in the target cache dir: add (or update) one bullet:
    `- [<Title>](<filename>.md) — <description>`

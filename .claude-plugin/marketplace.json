@@ -11,7 +11,7 @@
     {
       "name": "mneme",
       "source": "./plugins/mneme",
-      "description": "Loads a persistent cache into every chat and learns across sessions. Commands: /mneme:remember, /mneme:recall, /mneme:status, /mneme:review, /mneme:loop; plus an auto-discovered skill bay."
+      "description": "Two-tier memory for Claude Code: a lean Tier 1 cache injected into every chat, plus a Tier 2 wiki of ingested documents queried on demand — with auto-capture to a review inbox so nothing untrusted enters the cache silently. Commands: /mneme:remember, /mneme:recall (incl. --wiki), /mneme:status, /mneme:review, /mneme:lint, /mneme:ingest, /mneme:loop; plus an auto-discovered skill bay."
     }
   ]
 }
