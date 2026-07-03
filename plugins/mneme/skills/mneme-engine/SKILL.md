@@ -92,7 +92,7 @@ Any skill in the bay can join the loop:
 A background distiller catches learnings on chats where nobody saved anything. It is **on by default**, and it never writes straight into the trusted cache — captured notes wait in an inbox until you pull them.
 
 - **Trigger:** `SessionEnd`. When a session closes, the distiller reads the transcript.
-- **Model:** Sonnet (`claude-sonnet-4-6`), run headless. It applies the same relevance gate and is shown the current index so it dedupes instead of piling on.
+- **Model:** Sonnet 5 (`claude-sonnet-5`), run headless — the relevance gate needs judgment, and smaller tiers under-capture (Haiku scored 0/3 on planted durable facts in testing). Set `MNEME_DISTILL_MODEL` to override. It applies the same relevance gate and is shown the current index so it dedupes instead of piling on.
 - **Capture to the inbox, pull on demand:** distilled notes land as markdown in `~/.claude/mneme/inbox/` (a sibling of `cache/`) with `source: auto` in their frontmatter. The loader does NOT read the inbox, so auto-captured material never enters a chat until you promote it. Pull anytime with `/mneme:review` (keep/discard, dedupe + promote), or just open the folder and read the markdown yourself.
 - **Min-session gate:** trivially short sessions (under ~1500 chars of real conversation; override `MNEME_DISTILL_MIN_CHARS`) are skipped — no model call.
 - **Recursion guard:** the headless call sets `MNEME_DISTILL=1`; the distiller exits immediately if it sees that var, so the child session can never re-trigger it.

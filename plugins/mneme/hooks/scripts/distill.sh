@@ -18,7 +18,11 @@ MNEME_DIR="$(dirname "$GLOBAL_CACHE")"
 INBOX_DIR="$MNEME_DIR/inbox"
 LEGACY_PENDING="$GLOBAL_CACHE/_pending"
 CONFIG="${MNEME_CONFIG:-$HOME/.claude/mneme/config}"
-MODEL="${MNEME_DISTILL_MODEL:-claude-sonnet-4-6}"
+# Right-sized model: the relevance gate needs judgment, not just extraction — Haiku was
+# tested here (2026-07) and captured 0/3 planted durable facts where Sonnet caught all 3,
+# so the fastest tier under-captures and silently starves the cache. Sonnet 5 is the
+# smallest model that does this job well. Override with MNEME_DISTILL_MODEL.
+MODEL="${MNEME_DISTILL_MODEL:-claude-sonnet-5}"
 MIN_CHARS="${MNEME_DISTILL_MIN_CHARS:-1500}"
 
 # 2) One-time migration: fold the legacy pending tray (cache/_pending) into the inbox.

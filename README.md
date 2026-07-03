@@ -59,7 +59,7 @@ Rule of thumb: save a one-line fact or preference to the cache; ingest a whole d
 
 A background distiller catches learnings on sessions where nobody saved anything. It ships **on**; disable with `echo 'distill=off' >> ~/.claude/mneme/config`.
 
-- Fires on **SessionEnd**, reads the transcript, and asks **Sonnet** (`claude-sonnet-4-6`) to extract only durable, reusable notes (same relevance gate, deduped against the index). Trivially short sessions are skipped (no model call).
+- Fires on **SessionEnd**, reads the transcript, and asks **Sonnet 5** (`claude-sonnet-5`) to extract only durable, reusable notes — the smallest model that applies the relevance gate reliably (Haiku was tested and under-captures). Override with `MNEME_DISTILL_MODEL` (same relevance gate, deduped against the index). Trivially short sessions are skipped (no model call).
 - It **captures to an inbox, you pull on demand:** notes land as markdown in `~/.claude/mneme/inbox/` and are never injected into chats. Pull anytime with `/mneme:review`, or just open the folder — promote what you want into the live cache, discard the rest.
 - A recursion guard stops the headless model call from re-triggering the distiller.
 
