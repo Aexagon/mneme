@@ -1,0 +1,503 @@
+<title>Mneme — a memory for Claude</title>
+<style>
+  :root {
+    --paper: #F6F5F1;
+    --paper-raised: #FCFBF8;
+    --ink: #1B2230;
+    --ink-soft: #565E5A;
+    --ink-faint: #8A908B;
+    --patina: #1F7A66;
+    --patina-deep: #145A4B;
+    --gold: #B8862F;
+    --hairline: rgba(27, 34, 48, 0.12);
+    --hairline-soft: rgba(27, 34, 48, 0.07);
+    --serif: 'Charter', 'Iowan Old Style', 'Palatino Linotype', 'Palatino', Georgia, 'Times New Roman', serif;
+    --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+    --measure: 34rem;
+  }
+
+  * { box-sizing: border-box; }
+
+  .page {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 720px;
+    margin-inline: auto;
+    padding-inline: 24px;
+  }
+
+  section { padding-block: 4.5rem; }
+
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; text-wrap: balance; line-height: 1.15; margin: 0; }
+
+  p { margin: 0 0 1.15rem; max-width: var(--measure); }
+  p:last-child { margin-bottom: 0; }
+
+  a { color: var(--patina-deep); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--patina); outline-offset: 3px; border-radius: 3px;
+  }
+
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--patina-deep);
+    margin: 0 0 1rem;
+  }
+
+  .lede { font-size: 1.22rem; line-height: 1.55; color: var(--ink); }
+  .muted { color: var(--ink-soft); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    background: var(--ink);
+    color: #EEF0F0;
+    position: relative;
+    overflow: hidden;
+    padding-block: 6rem 5.5rem;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 82% 8%, rgba(31, 122, 102, 0.22), transparent 60%),
+      radial-gradient(80% 70% at 8% 100%, rgba(184, 134, 47, 0.10), transparent 55%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow { color: #7FD3BE; }
+  .hero h1 {
+    color: #FBFBF9;
+    font-size: clamp(2.5rem, 7vw, 3.9rem);
+    letter-spacing: -0.01em;
+    margin-bottom: 1.4rem;
+  }
+  .hero h1 .mark { color: #7FD3BE; font-style: italic; }
+  .hero .lede { color: #C9CEcd; max-width: 30rem; font-size: 1.25rem; }
+  .hero .whisper {
+    margin-top: 2.2rem;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: #9AA3A0;
+    max-width: 30rem;
+  }
+
+  /* the continuity stack */
+  .threads {
+    margin-top: 3rem;
+    display: grid;
+    gap: 0.75rem;
+    max-width: 30rem;
+  }
+  .thread {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-left: 2px solid rgba(127, 211, 190, 0.55);
+    border-radius: 10px;
+    padding: 0.85rem 1.05rem;
+    font-size: 0.95rem;
+    color: #D6DAD8;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rise 0.7s ease forwards;
+  }
+  .thread .who { font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: #7FD3BE; flex: none; width: 3.4rem; }
+  .thread:nth-child(1) { animation-delay: 0.15s; }
+  .thread:nth-child(2) { animation-delay: 0.55s; }
+  .thread:nth-child(3) { animation-delay: 0.95s; }
+  .thread .knows {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: #7FD3BE;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+
+  /* ---------- generic section heading ---------- */
+  .section-head h2 { font-size: clamp(1.7rem, 4vw, 2.3rem); margin-bottom: 1.1rem; }
+
+  .divider { height: 1px; background: var(--hairline); border: 0; margin: 0; }
+
+  /* ---------- The loop ---------- */
+  .loop-band { background: var(--paper-raised); border-block: 1px solid var(--hairline); }
+  .loop {
+    margin-top: 2.5rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    counter-reset: step;
+  }
+  .step {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 1.3rem 1.15rem 1.4rem;
+  }
+  .step .n {
+    counter-increment: step;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--patina-deep);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .step .n::before { content: counter(step, decimal-leading-zero); }
+  .step h3 { font-size: 1.08rem; margin: 0.5rem 0 0.4rem; }
+  .step p { font-size: 0.95rem; line-height: 1.5; color: var(--ink-soft); margin: 0; }
+  .loop-note {
+    margin-top: 1.4rem;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+  .loop-note strong { font-style: normal; color: var(--patina-deep); font-weight: 600; }
+
+  /* ---------- Say-it table ---------- */
+  .say {
+    margin-top: 2.2rem;
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--paper-raised);
+  }
+  .say-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    padding: 1.15rem 1.3rem;
+    align-items: baseline;
+  }
+  .say-row + .say-row { border-top: 1px solid var(--hairline-soft); }
+  .say-you {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    color: var(--ink);
+  }
+  .say-you::before { content: "\201C"; color: var(--patina); }
+  .say-you::after { content: "\201D"; color: var(--patina); }
+  .say-does { font-size: 0.95rem; color: var(--ink-soft); line-height: 1.5; }
+
+  /* ---------- Two tiers ---------- */
+  .tiers { margin-top: 2.4rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .tier {
+    background: var(--paper-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: 1.6rem 1.5rem 1.7rem;
+  }
+  .tier .tag {
+    font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600;
+    color: var(--patina-deep); margin-bottom: 0.7rem; display: block;
+  }
+  .tier h3 { font-size: 1.35rem; margin-bottom: 0.6rem; }
+  .tier p { font-size: 0.96rem; color: var(--ink-soft); line-height: 1.55; max-width: none; }
+  .tier .use {
+    margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--hairline-soft);
+    font-size: 0.9rem; color: var(--ink);
+  }
+  .tier .use b { color: var(--patina-deep); font-weight: 600; }
+
+  /* ---------- Install ---------- */
+  .install-band { background: var(--ink); color: #E7EAE9; }
+  .install-band .eyebrow { color: #7FD3BE; }
+  .install-band h2 { color: #FBFBF9; font-size: clamp(1.7rem, 4vw, 2.3rem); margin-bottom: 1.1rem; }
+  .install-band p { color: #B7BEBB; }
+  .steps { margin-top: 2rem; display: grid; gap: 1.4rem; }
+  .istep { display: grid; grid-template-columns: 2rem 1fr; gap: 1rem; align-items: start; }
+  .istep .dot {
+    width: 2rem; height: 2rem; border-radius: 999px;
+    border: 1px solid rgba(127, 211, 190, 0.5);
+    color: #7FD3BE; font-family: var(--mono); font-size: 0.85rem; font-weight: 600;
+    display: grid; place-items: center; margin-top: 0.15rem;
+  }
+  .istep h3 { color: #F3F5F4; font-size: 1.1rem; margin-bottom: 0.35rem; }
+  .istep p { margin: 0; font-size: 0.96rem; }
+  .terminal {
+    margin-top: 0.85rem;
+    background: #11151E;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    line-height: 1.9;
+    color: #DDE3E1;
+    overflow-x: auto;
+  }
+  .terminal .cmd { display: block; white-space: nowrap; }
+  .terminal .cmd::before { content: "› "; color: #7FD3BE; }
+  .install-band .done {
+    margin-top: 2.2rem; font-family: var(--serif); font-style: italic; color: #9AA3A0; font-size: 1.05rem;
+  }
+
+  /* ---------- Expect / data ---------- */
+  .plainlist { margin: 1.6rem 0 0; padding: 0; list-style: none; display: grid; gap: 1rem; }
+  .plainlist li {
+    display: grid; grid-template-columns: auto 1fr; gap: 0.9rem; align-items: baseline;
+    max-width: var(--measure);
+  }
+  .plainlist .k {
+    font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.03em;
+    color: var(--patina-deep); text-transform: uppercase; font-weight: 600; white-space: nowrap;
+    padding-top: 0.1rem;
+  }
+  .plainlist .v { color: var(--ink-soft); font-size: 0.98rem; line-height: 1.55; }
+  .plainlist .v b { color: var(--ink); font-weight: 600; }
+
+  .reassure {
+    margin-top: 2rem;
+    background: rgba(31, 122, 102, 0.06);
+    border: 1px solid rgba(31, 122, 102, 0.18);
+    border-radius: 12px;
+    padding: 1.3rem 1.4rem;
+    font-size: 0.98rem;
+    color: var(--ink);
+    max-width: var(--measure);
+  }
+  .reassure strong { color: var(--patina-deep); }
+
+  /* ---------- Power-user details ---------- */
+  details.power {
+    margin-top: 2.4rem; border: 1px solid var(--hairline); border-radius: 12px;
+    background: var(--paper-raised); overflow: hidden;
+  }
+  details.power summary {
+    cursor: pointer; padding: 1.15rem 1.4rem; font-weight: 600; color: var(--ink);
+    list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  details.power summary::-webkit-details-marker { display: none; }
+  details.power summary .hint { font-family: var(--sans); font-weight: 400; font-size: 0.85rem; color: var(--ink-faint); }
+  details.power summary::after { content: "+"; font-family: var(--mono); color: var(--patina-deep); font-size: 1.2rem; }
+  details.power[open] summary::after { content: "\2212"; }
+  .cmds { padding: 0 1.4rem 1.4rem; display: grid; gap: 0.1rem; }
+  .cmd-row { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; padding: 0.7rem 0; border-top: 1px solid var(--hairline-soft); align-items: baseline; }
+  .cmd-row code { font-family: var(--mono); font-size: 0.85rem; color: var(--patina-deep); }
+  .cmd-row span { font-size: 0.92rem; color: var(--ink-soft); }
+
+  /* ---------- footer ---------- */
+  footer { padding-block: 3rem; border-top: 1px solid var(--hairline); }
+  footer p { font-size: 0.85rem; color: var(--ink-faint); max-width: none; }
+  footer .name { font-family: var(--serif); font-style: italic; color: var(--ink-soft); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 720px) {
+    .page { font-size: 17px; }
+    .loop { grid-template-columns: 1fr 1fr; }
+    .tiers { grid-template-columns: 1fr; }
+    .say-row { grid-template-columns: 1fr; gap: 0.4rem; }
+    .say-does { padding-left: 0.1rem; }
+    .cmd-row { grid-template-columns: 1fr; gap: 0.2rem; }
+  }
+  @media (max-width: 460px) {
+    .loop { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .thread { animation: none; opacity: 1; transform: none; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">A memory for Claude</p>
+      <h1>Claude that <span class="mark">remembers</span> you.</h1>
+      <p class="lede">Normally Claude forgets everything the moment a chat ends. Mneme lets it quietly keep the things that matter, so every new conversation starts where the last one left off.</p>
+      <p class="whisper">You don&rsquo;t have to learn anything. You just talk to Claude the way you already do.</p>
+
+      <div class="threads" aria-hidden="true">
+        <div class="thread"><span class="who">Mon</span><span>&ldquo;Remember I never post on Fridays.&rdquo;</span></div>
+        <div class="thread"><span class="who">Wed</span><span>&ldquo;Draft next week&rsquo;s calendar.&rdquo;<span class="knows">already knows: no Fridays</span></span></div>
+        <div class="thread"><span class="who">Fri</span><span>&ldquo;Same for my other client?&rdquo;<span class="knows">still remembers</span></span></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="section-head">
+    <div class="wrap">
+      <p class="eyebrow">The short version</p>
+      <h2>What it actually does for you</h2>
+      <p>Think of Mneme as a good assistant&rsquo;s memory. Tell Claude something durable &mdash; how you like things, a fact about your business, a preference &mdash; and it holds onto it. The next time you open a chat, it already knows, so you stop repeating yourself.</p>
+      <p class="muted">It runs quietly in the background. There is nothing to set up after installing, and nothing to remember to do.</p>
+    </div>
+  </section>
+
+  <section class="loop-band">
+    <div class="wrap">
+      <p class="eyebrow">How it works</p>
+      <h2 style="font-size: clamp(1.7rem, 4vw, 2.3rem);">A simple loop, and you barely touch it</h2>
+      <div class="loop">
+        <div class="step">
+          <span class="n"></span>
+          <h3>You talk</h3>
+          <p>Chat with Claude exactly like normal &mdash; no special words, no commands.</p>
+        </div>
+        <div class="step">
+          <span class="n"></span>
+          <h3>It notices</h3>
+          <p>When you say something worth keeping, Claude quietly makes a note of it.</p>
+        </div>
+        <div class="step">
+          <span class="n"></span>
+          <h3>You okay it</h3>
+          <p>Every so often it asks, in plain words, &ldquo;want me to keep these?&rdquo; You say yes to the good ones.</p>
+        </div>
+        <div class="step">
+          <span class="n"></span>
+          <h3>It carries over</h3>
+          <p>Every new chat already knows &mdash; and the loop begins again.</p>
+        </div>
+      </div>
+      <p class="loop-note">The one habit worth having: when Claude offers to fold notes into memory, <strong>glance and say yes to the keepers.</strong> That&rsquo;s the whole maintenance.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">How to use it</p>
+      <h2 class="section-head" style="font-size: clamp(1.7rem, 4vw, 2.3rem);">Just say it out loud</h2>
+      <p>You never type a command. You talk, and Claude does the right thing. A few of the things it listens for:</p>
+      <div class="say">
+        <div class="say-row">
+          <div class="say-you">Remember that I prefer short, bullet-point replies.</div>
+          <div class="say-does">Claude saves it and confirms. Next chat, it already answers that way.</div>
+        </div>
+        <div class="say-row">
+          <div class="say-you">What do you know about my business?</div>
+          <div class="say-does">It tells you everything it has remembered about you.</div>
+        </div>
+        <div class="say-row">
+          <div class="say-you">Forget what I said about the old logo.</div>
+          <div class="say-does">It finds that note and removes it.</div>
+        </div>
+        <div class="say-row">
+          <div class="say-you">Tidy up your memory.</div>
+          <div class="say-does">It clears out duplicates and anything out of date &mdash; checking with you before it deletes.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="loop-band">
+    <div class="wrap">
+      <p class="eyebrow">Two kinds of memory</p>
+      <h2 style="font-size: clamp(1.7rem, 4vw, 2.3rem);">Everyday facts, and the reference shelf</h2>
+      <p>Mneme keeps two kinds of memory. You don&rsquo;t have to manage the difference &mdash; but knowing it helps you understand what to expect.</p>
+      <div class="tiers">
+        <div class="tier">
+          <span class="tag">Everyday memory</span>
+          <h3>The things you&rsquo;d just tell someone</h3>
+          <p>Your preferences, facts about your work, how you like things done. Small, durable notes that Claude carries into <em>every</em> chat automatically, so it always has your context on hand.</p>
+          <div class="use"><b>When to use it:</b> anything you&rsquo;d say in a sentence. Just tell Claude &mdash; &ldquo;remember that&hellip;&rdquo;</div>
+        </div>
+        <div class="tier">
+          <span class="tag">Reference shelf</span>
+          <h3>Whole documents to consult</h3>
+          <p>Bigger material you want Claude to be able to look at &mdash; brand guidelines, a stack of research, a long transcript. It&rsquo;s kept on the side and opened only when it&rsquo;s relevant, so it never clutters your everyday chats.</p>
+          <div class="use"><b>When to use it:</b> a whole file or a big body of reference. Ask Claude to &ldquo;add this document to your knowledge.&rdquo;</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="install-band">
+    <div class="wrap">
+      <p class="eyebrow">Getting started</p>
+      <h2>Installing takes about a minute</h2>
+      <p>You do this once. If you can copy and paste, you can install Mneme.</p>
+      <div class="steps">
+        <div class="istep">
+          <div class="dot">1</div>
+          <div>
+            <h3>Open Claude Code</h3>
+            <p>That&rsquo;s the app where you type to Claude.</p>
+          </div>
+        </div>
+        <div class="istep">
+          <div class="dot">2</div>
+          <div>
+            <h3>Paste these two lines, one at a time</h3>
+            <p>Type or paste each line, press enter, then do the next.</p>
+            <div class="terminal">
+              <span class="cmd">/plugin marketplace add Aexagon/mneme</span>
+              <span class="cmd">/plugin install mneme@mneme</span>
+            </div>
+          </div>
+        </div>
+        <div class="istep">
+          <div class="dot">3</div>
+          <div>
+            <h3>Restart, and you&rsquo;re done</h3>
+            <p>Close and reopen the session. You&rsquo;ll see a small &ldquo;Mneme is active&rdquo; note at the top of your chats. From then on it just works.</p>
+          </div>
+        </div>
+      </div>
+      <p class="done">Nothing to configure. Nothing to remember. Just talk to Claude.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">What to expect</p>
+      <h2 style="font-size: clamp(1.7rem, 4vw, 2.3rem);">The first couple of weeks</h2>
+      <ul class="plainlist">
+        <li><span class="k">Week 1</span><span class="v">It feels like <b>normal Claude</b>. Behind the scenes it&rsquo;s quietly taking notes as you work.</span></li>
+        <li><span class="k">Week 2+</span><span class="v">Chats start <b>already knowing your context</b>. You notice yourself repeating things less and less.</span></li>
+        <li><span class="k">Ongoing</span><span class="v">Now and then Claude offers to fold its notes into memory. <b>Glance and say yes</b> to the useful ones. That&rsquo;s the only habit.</span></li>
+      </ul>
+
+      <div class="reassure">
+        <strong>Your memory stays yours.</strong> Everything Mneme remembers lives on your own computer, as plain text files. Nothing is sent anywhere, and you can read or delete any of it at any time. If you ever want a clean slate, just ask Claude to clear its memory.
+      </div>
+
+      <details class="power">
+        <summary>For the curious: the commands underneath <span class="hint">you never need these</span></summary>
+        <div class="cmds">
+          <div class="cmd-row"><code>/mneme:remember</code><span>Save something on the spot.</span></div>
+          <div class="cmd-row"><code>/mneme:recall</code><span>Search your memory directly.</span></div>
+          <div class="cmd-row"><code>/mneme:review</code><span>Go through the notes Claude jotted down.</span></div>
+          <div class="cmd-row"><code>/mneme:status</code><span>A quick health check of your memory.</span></div>
+          <div class="cmd-row"><code>/mneme:ingest</code><span>Add a document to the reference shelf.</span></div>
+          <div class="cmd-row"><code>/mneme:lint</code><span>Find stale or broken notes.</span></div>
+          <div class="cmd-row"><code>/mneme:loop</code><span>Have Claude drive a goal to completion.</span></div>
+        </div>
+        <p style="padding: 0 1.4rem 1.4rem; margin: 0; font-size: 0.9rem; color: var(--ink-faint); max-width: none;">Everything on this list also happens for you just by talking. The commands are shortcuts, not the front door.</p>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p><span class="name">Mneme</span> &mdash; named for the muse of memory. A quiet layer that lets Claude carry what matters from one conversation to the next.</p>
+    </div>
+  </footer>
+
+</div>

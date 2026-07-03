@@ -4,6 +4,8 @@
 
 You don't have to learn anything. Just talk to Claude the way you already do.
 
+> **New here?** Open [`docs/explainer/guide.html`](docs/explainer/guide.html) in your browser — a one-page, plain-language guide to what Mneme does, how to use it, and how to install it. It's written for someone who has never installed a plugin.
+
 ## Install
 
 Paste these two lines into Claude Code, one at a time:
@@ -102,7 +104,7 @@ See the `mneme-engine` skill for the full protocol.
 ```
 mneme/                                  (git repo = marketplace)
   .claude-plugin/marketplace.json
-  docs/explainer/                       full plain-language manual (index.html)
+  docs/explainer/                       guide.html (client one-pager) + index.html (full manual)
   plugins/mneme/
     .claude-plugin/plugin.json
     hooks/         hooks.json + scripts/ (load-cache.sh, distill.sh)

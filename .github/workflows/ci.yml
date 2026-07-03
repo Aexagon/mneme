@@ -1,0 +1,34 @@
+name: tests
+
+on:
+  push:
+    branches: [main, phase-0-foundation]
+  pull_request:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      # python3 ships on both runners; the loader uses it and the tests need it.
+      - name: Show environment
+        run: bash --version | head -1 && python3 --version
+      - name: Run the Mneme test suite
+        run: bash tests/run.sh
+
+  shellcheck:
+    name: shellcheck (advisory)
+    runs-on: ubuntu-latest
+    # Advisory only: the shell targets BSD tools and has never been linted, so
+    # surface suggestions in the logs without blocking the build. Promote to a
+    # gate once the scripts are shellcheck-clean.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint hook + lib scripts
+        run: shellcheck plugins/mneme/hooks/scripts/*.sh plugins/mneme/hooks/scripts/lib/*.sh
