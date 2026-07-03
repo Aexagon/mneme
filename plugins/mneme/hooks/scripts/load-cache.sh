@@ -76,6 +76,22 @@ corpora = wiki_names(wiki_home) + wiki_names(project_wiki)
 if corpora:
     parts.append("# Mneme wikis\n\nWikis: " + ", ".join(corpora) + " — query with /recall --wiki <name>")
 
+# Inbox signal: count auto-captured notes waiting to be folded in (never their bodies).
+# This is the cue the protocol uses to OFFER a conversational review — so a
+# non-technical user never has to learn /mneme:review. Mirrors review.md's filter
+# (*.md, excluding _-prefixed). Bodies are NEVER read here — count only.
+try:
+    inbox = os.path.join(os.path.dirname(global_cache), "inbox")
+    pending = len([f for f in os.listdir(inbox)
+                   if f.endswith(".md") and not f.startswith("_")])
+except OSError:
+    pending = 0
+if pending:
+    parts.append("# Mneme inbox\n\n%d auto-captured note(s) pending. At a natural "
+                 "moment, offer in plain words to fold the useful ones into memory, "
+                 "then promote the ones the user approves. Don't make them learn "
+                 "\"inbox\" or any command." % pending)
+
 context = "\n\n---\n\n".join(parts)
 if len(context) > MAX_CHARS:
     context = context[:MAX_CHARS] + "\n\n[...Mneme index truncated - run /mneme:status to prune.]"

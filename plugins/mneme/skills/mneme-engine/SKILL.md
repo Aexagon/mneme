@@ -14,6 +14,16 @@ Mneme makes Claude Code compound: a persistent cache loads into every chat, and 
 - Each cache dir has an `INDEX.md` (the lean, always-loaded summary) plus one file per note.
 - This is separate from Claude Code's built-in auto-memory. Do not conflate them.
 
+## Conversation is the interface (recognize intent, do the work yourself)
+
+The user should never have to learn a command. Recognize natural-language intent and perform the operation yourself — the slash commands are optional equivalents, not a requirement.
+
+- **Save** — "remember that…", "keep in mind…", "for future reference…", "don't forget…", or any stated durable preference or fact → write the note yourself per this skill (same as `/mneme:remember`), applying the relevance gate. Confirm in one short sentence.
+- **Recall** — "what do you know about…", or any question the cache would answer → search the cache and answer on your own (same as `/mneme:recall`), before answering from scratch.
+- **Forget** — "forget what I said about X" → find that note and remove it, updating `INDEX.md`.
+- **Tidy** — "clean up your memory", "tidy up" → prune duplicates and stale notes (same as `/mneme:status prune`); always confirm before deleting.
+- **Review captured notes** — see the distiller section: offer to fold pending auto-captures into memory conversationally, then promote the approved ones yourself (same as `/mneme:review`).
+
 ## The loop
 
 1. **Load** — the SessionStart hook injects both INDEX.md files + this protocol at the start of every chat. The index is what you always see; note bodies are read on demand.
@@ -94,6 +104,7 @@ A background distiller catches learnings on chats where nobody saved anything. I
 - **Trigger:** `SessionEnd`. When a session closes, the distiller reads the transcript.
 - **Model:** Sonnet 5 (`claude-sonnet-5`), run headless — the relevance gate needs judgment, and smaller tiers under-capture (Haiku scored 0/3 on planted durable facts in testing). Set `MNEME_DISTILL_MODEL` to override. It applies the same relevance gate and is shown the current index so it dedupes instead of piling on.
 - **Capture to the inbox, pull on demand:** distilled notes land as markdown in `~/.claude/mneme/inbox/` (a sibling of `cache/`) with `source: auto` in their frontmatter. The loader does NOT read the inbox, so auto-captured material never enters a chat until you promote it. Pull anytime with `/mneme:review` (keep/discard, dedupe + promote), or just open the folder and read the markdown yourself.
+- **Promote conversationally — don't make review a chore.** A non-technical user will never run `/mneme:review`, so the inbox would rot. Instead: when the loaded context reports pending auto-captured notes (the loader can surface a count), offer once, at a natural moment, in plain words — "I've jotted down a few things from our recent chats; want me to fold the useful ones into memory?" Then read the inbox, walk the user through the useful ones, and promote the approved notes yourself (apply the gate + dedupe, move into the cache, update `INDEX.md`, log the promotion — exactly what `/mneme:review` does). Never make the user learn the word "inbox" or the command.
 - **Min-session gate:** trivially short sessions (under ~1500 chars of real conversation; override `MNEME_DISTILL_MIN_CHARS`) are skipped — no model call.
 - **Recursion guard:** the headless call sets `MNEME_DISTILL=1`; the distiller exits immediately if it sees that var, so the child session can never re-trigger it.
 - **Disable:** `echo 'distill=off' >> ~/.claude/mneme/config` (or `MNEME_DISTILL_ENABLED=0`). Re-enable by removing that line.

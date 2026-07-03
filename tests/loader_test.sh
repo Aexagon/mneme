@@ -25,6 +25,24 @@ test_loader_honors_max_chars() {
   assert_contains "$out" "Mneme index truncated" "loader truncates past MNEME_MAX_CHARS" || return 1
 }
 
+test_loader_signals_pending_inbox_but_not_when_empty() {
+  local root tmp out
+  root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  tmp="$(mktemp -d)"; mkdir -p "$tmp/cache" "$tmp/inbox"
+  printf '# Mneme cache\n\n- [Demo](fact-demo.md) — x\n' > "$tmp/cache/INDEX.md"
+  # Empty inbox (only an ignored _-prefixed file): loader must stay silent — no nagging.
+  printf 'diagnostic\n' > "$tmp/inbox/_distill.log"
+  out="$(MNEME_GLOBAL_DIR="$tmp/cache" bash "$root/plugins/mneme/hooks/scripts/load-cache.sh" \
+        | python3 -c 'import json,sys;print(json.load(sys.stdin)["hookSpecificOutput"]["additionalContext"])')"
+  assert_not_contains "$out" "Mneme inbox" "loader stays silent when no notes are pending" || { rm -rf "$tmp"; return 1; }
+  # Two pending notes: loader surfaces a count so Claude can offer to fold them in.
+  printf 'a\n' > "$tmp/inbox/fact-a.md"; printf 'b\n' > "$tmp/inbox/preference-b.md"
+  out="$(MNEME_GLOBAL_DIR="$tmp/cache" bash "$root/plugins/mneme/hooks/scripts/load-cache.sh" \
+        | python3 -c 'import json,sys;print(json.load(sys.stdin)["hookSpecificOutput"]["additionalContext"])')"
+  rm -rf "$tmp"
+  assert_contains "$out" "2 auto-captured note(s) pending" "loader counts pending inbox notes" || return 1
+}
+
 test_loader_announces_wiki_but_never_its_body() {
   local root tmp out
   root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
